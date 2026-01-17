@@ -1,0 +1,6 @@
+[project]
+name = "Distill"
+version = "0.1.0"
+description = "LLM Prompt Compression Library"
+requires-python = ">=3.14"
+dependencies = []
