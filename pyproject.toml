@@ -3,4 +3,10 @@ name = "Distill"
 version = "0.1.0"
 description = "LLM Prompt Compression Library"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "nltk>=3.9.2",
+    "numpy>=2.4.1",
+    "tiktoken>=0.12.0",
+    "torch>=2.9.1",
+    "transformers>=4.57.6",
+]
