@@ -4,7 +4,6 @@ import HeroSection from './components/HeroSection';
 import DemoSection from './components/DemoSection';
 import ComparisonTable from './components/ComparisonTable';
 import AccuracyPanel from './components/AccuracyPanel';
-import CompressionChart from './components/CompressionChart';
 import LatencyPanel from './components/LatencyPanel';
 import CostPanel from './components/CostPanel';
 import ContextSection from './components/ContextSection';
@@ -218,13 +217,8 @@ export default function App() {
             <ComparisonTable />
           </div>
           
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            <div className="scroll-reveal">
-              <AccuracyPanel />
-            </div>
-            <div className="scroll-reveal">
-              <CompressionChart />
-            </div>
+          <div className="scroll-reveal">
+            <AccuracyPanel />
           </div>
           
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">

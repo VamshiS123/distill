@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, AlertCircle, TrendingUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertCircle, Database, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { RESULTS_DATA, HISTOGRAM_DATA } from '../constants';
 
@@ -8,15 +8,21 @@ export default function AccuracyPanel() {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8 h-full flex flex-col">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8 flex flex-col">
       <div className="flex items-start justify-between mb-6">
         <div>
           <h3 className="text-xl font-bold text-white mb-1">Accuracy Analysis</h3>
           <p className="text-sm text-[#a1a1aa]">Performance delta over LongBench v2 baseline</p>
         </div>
-        <div className="bg-green-500/20 text-green-400 p-2 rounded-lg border border-green-500/30">
-          <TrendingUp size={20} />
-        </div>
+        <a 
+          href="https://docs.google.com/spreadsheets/d/1K5V2Z7MIE7U95Y6jezT_Kw2FB4iaJpYSvZe97lxNBNc/edit?gid=1588159073#gid=1588159073"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500/20 text-green-400 p-2 rounded-lg border border-green-500/30 hover:bg-green-500/30 hover:border-green-500/50 transition-all cursor-pointer flex items-center gap-1.5 group"
+        >
+          <Database size={18} />
+          <ArrowRight size={14} className="opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+        </a>
       </div>
       
       {/* Results Table */}
