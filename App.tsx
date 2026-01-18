@@ -261,7 +261,7 @@ export default function App() {
               <a href="#" className="hover:text-white transition">Github</a>
               <a href="#" className="hover:text-white transition">Privacy</a>
             </div>
-            <p className="mt-8 text-xs">© 2024 The Token Company Challenge - Distill Project</p>
+            <p className="mt-8 text-xs">© 2026 The Token Company Challenge - Distill Project</p>
           </div>
         </footer>
       </div>

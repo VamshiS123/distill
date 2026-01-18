@@ -53,20 +53,20 @@ export default function HeroSection() {
             value={68.2} 
             suffix="%" 
             label="Token Reduction" 
-            icon="📉"
+            icon="⬇"
           />
           <HeroMetricCard 
             value={1.3} 
             suffix="%" 
             prefix="+" 
             label="Accuracy Gain" 
-            icon="🎯"
+            icon="◎"
           />
           <HeroMetricCard 
             value={2.4} 
             suffix="x" 
             label="Inference Boost" 
-            icon="⚡"
+            icon="↗"
           />
         </div>
         

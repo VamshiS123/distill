@@ -8,7 +8,7 @@ export default function CompressionChart() {
   const [showBear1, setShowBear1] = useState(true);
   
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8 h-full flex flex-col">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8 flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h3 className="text-xl font-bold text-white mb-1">Compression Efficiency</h3>
@@ -24,8 +24,8 @@ export default function CompressionChart() {
         </div>
       </div>
       
-      <div className="flex-grow">
-        <ResponsiveContainer width="100%" height={320}>
+      <div>
+        <ResponsiveContainer width="100%" height={280}>
           <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
             <XAxis 
@@ -75,7 +75,7 @@ export default function CompressionChart() {
         </ResponsiveContainer>
       </div>
       
-      <div className="mt-6 p-5 bg-blue-500/10 border border-blue-500/30 rounded-2xl">
+      <div className="mt-4 p-5 bg-blue-500/10 border border-blue-500/30 rounded-2xl">
         <div className="flex items-center gap-3 mb-2 text-blue-400">
           <Target size={18} />
           <h4 className="font-bold text-sm">Superior Efficiency Frontier</h4>
