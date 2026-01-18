@@ -3,6 +3,7 @@ import random
 
 import numpy as np
 import torch
+from loguru import logger
 from torch.utils.data import Dataset
 
 
@@ -14,6 +15,7 @@ class TokenClfDataset(Dataset):
             tokenizer=None,
             model_name="bert-base-multilingual-cased",
     ):
+        logger.trace(f"Initializing TokenClfDataset with {len(texts)} texts, max_len={max_len}, model_name={model_name}")
         self.len = len(texts)
         self.texts = texts
         self.tokenizer = tokenizer
@@ -26,6 +28,8 @@ class TokenClfDataset(Dataset):
         self.mask_token = "[MASK]"
 
     def __getitem__(self, index):
+        # High volume trace log
+        # logger.trace(f"TokenClfDataset: getting item at index {index}")
         text = self.texts[index]
         tokenized_text = self.tokenizer.tokenize(text)
 
@@ -54,6 +58,7 @@ class TokenClfDataset(Dataset):
 
 
 def seed_everything(seed: int):
+    logger.debug(f"Seeding everything with seed={seed}")
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
