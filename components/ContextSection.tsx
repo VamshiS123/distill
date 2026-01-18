@@ -5,53 +5,53 @@ import { Maximize, Search } from 'lucide-react';
 export default function ContextSection() {
   return (
     <section>
-      <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+      <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
         Context Utilization & Retrieval
       </h2>
       
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Multiplier Visual */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col justify-center">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-6">
-            <Maximize className="text-blue-600" size={24} />
-            <h3 className="text-xl font-bold text-gray-900">Effective Context Multiplier</h3>
+            <Maximize className="text-blue-400" size={24} />
+            <h3 className="text-xl font-bold text-white">Effective Context Multiplier</h3>
           </div>
           
-          <div className="relative h-24 w-full bg-gray-100 rounded-xl mb-8 flex items-center px-4 overflow-hidden border border-gray-100">
+          <div className="relative h-24 w-full bg-[#27272a] rounded-xl mb-8 flex items-center px-4 overflow-hidden border border-[#27272a]">
             {/* Base Context */}
-            <div className="h-10 bg-gray-300 rounded-lg flex items-center justify-center text-[10px] font-bold text-gray-600 w-1/4 z-10 shadow-sm">
+            <div className="h-10 bg-white/10 rounded-lg flex items-center justify-center text-[10px] font-bold text-[#a1a1aa] w-1/4 z-10 shadow-sm border border-[#27272a]">
               128K Native
             </div>
             {/* Expanded Context */}
-            <div className="absolute inset-y-0 left-0 bg-blue-500/10 border-r-2 border-blue-500 border-dashed flex items-center justify-end pr-4 w-[75%]">
-              <span className="text-blue-700 font-black text-xl">~400K Effective</span>
+            <div className="absolute inset-y-0 left-0 bg-blue-500/20 border-r-2 border-blue-500 border-dashed flex items-center justify-end pr-4 w-[75%]">
+              <span className="text-blue-400 font-black text-xl">~400K Effective</span>
             </div>
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-gray-100 opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#27272a] opacity-50" />
           </div>
           
-          <p className="text-sm text-gray-600 leading-relaxed italic">
+          <p className="text-sm text-[#a1a1aa] leading-relaxed italic">
             "By pruning 68% of redundant input tokens, models with a 128K context window can effectively digest documents that previously required a 400K window, with zero retraining required."
           </p>
         </div>
 
         {/* Needle in Haystack Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8">
           <div className="flex items-center gap-3 mb-6">
-            <Search className="text-blue-600" size={24} />
-            <h3 className="text-xl font-bold text-gray-900">Needle-in-Haystack Retrieval</h3>
+            <Search className="text-blue-400" size={24} />
+            <h3 className="text-xl font-bold text-white">Needle-in-Haystack Retrieval</h3>
           </div>
           
-          <div className="overflow-hidden border border-gray-100 rounded-xl">
+          <div className="overflow-hidden border border-[#27272a] rounded-xl">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Context Depth</th>
-                  <th className="px-4 py-3 text-center font-bold text-gray-500 uppercase">Baseline</th>
-                  <th className="px-4 py-3 text-center font-bold text-blue-600 uppercase">Distill (0.9)</th>
+                <tr className="bg-white/5">
+                  <th className="px-4 py-3 text-left font-bold text-[#a1a1aa] uppercase">Context Depth</th>
+                  <th className="px-4 py-3 text-center font-bold text-[#a1a1aa] uppercase">Baseline</th>
+                  <th className="px-4 py-3 text-center font-bold text-blue-400 uppercase">Distill (0.9)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-[#27272a]">
                 <NeedleRow depth="Top 10%" baseline={98} distill={99} />
                 <NeedleRow depth="Middle 50%" baseline={92} distill={94} />
                 <NeedleRow depth="Bottom 10%" baseline={89} distill={92} />
@@ -59,14 +59,14 @@ export default function ContextSection() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-[10px] text-gray-400 font-medium text-center">
+          <p className="mt-4 text-[10px] text-[#a1a1aa] font-medium text-center">
             Retrieval accuracy (%) tested across 1,000 document permutations at 100K context length.
           </p>
         </div>
       </div>
       
       {/* Real-World Use Case Card */}
-      <div className="mt-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-xl shadow-blue-900/10">
+      <div className="mt-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-xl shadow-blue-900/10 border border-blue-500/30">
         <h3 className="text-xl font-bold mb-4">Real-World Application: Enterprise Document QA</h3>
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
@@ -74,11 +74,11 @@ export default function ContextSection() {
               A global legal firm utilized Distill to process 500-page case files. Previously, prompts had to be chunked across multiple calls, losing global coherence. With Distill, entire files were compressed to fit within a single 128K context window.
             </p>
             <div className="flex gap-4">
-              <div className="bg-white/10 rounded-lg p-3 text-center flex-1">
+              <div className="bg-white/10 rounded-lg p-3 text-center flex-1 border border-white/10">
                 <div className="text-xl font-black">62%</div>
                 <div className="text-[10px] font-bold uppercase text-blue-200">Cost Reduced</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3 text-center flex-1">
+              <div className="bg-white/10 rounded-lg p-3 text-center flex-1 border border-white/10">
                 <div className="text-xl font-black">4x</div>
                 <div className="text-[10px] font-bold uppercase text-blue-200">Throughput</div>
               </div>
@@ -101,12 +101,12 @@ export default function ContextSection() {
 
 const NeedleRow: React.FC<{ depth: string; baseline: number; distill: number }> = ({ depth, baseline, distill }) => (
   <tr>
-    <td className="px-4 py-3 font-semibold text-gray-700">{depth}</td>
-    <td className="px-4 py-3 text-center text-gray-500 font-medium">{baseline}%</td>
+    <td className="px-4 py-3 font-semibold text-white">{depth}</td>
+    <td className="px-4 py-3 text-center text-[#a1a1aa] font-medium">{baseline}%</td>
     <td className="px-4 py-3 text-center">
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 rounded-md font-bold">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-400 rounded-md font-bold border border-green-500/30">
         {distill}%
-        <span className="text-[8px] text-green-600 bg-white px-1 rounded">+{distill - baseline}</span>
+        <span className="text-[8px] text-green-300 bg-green-500/30 px-1 rounded">+{distill - baseline}</span>
       </span>
     </td>
   </tr>

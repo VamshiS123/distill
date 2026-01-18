@@ -8,16 +8,16 @@ export default function CompressionChart() {
   const [showBear1, setShowBear1] = useState(true);
   
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 h-full flex flex-col">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h3 className="text-xl font-bold text-gray-900 mb-1">Compression Efficiency</h3>
-          <p className="text-sm text-gray-500">The Accuracy vs. Token Reduction Pareto Frontier</p>
+          <h3 className="text-xl font-bold text-white mb-1">Compression Efficiency</h3>
+          <p className="text-sm text-[#a1a1aa]">The Accuracy vs. Token Reduction Pareto Frontier</p>
         </div>
-        <div className="flex items-center gap-3 bg-gray-100 p-1 rounded-lg">
+        <div className="flex items-center gap-3 bg-white/5 p-1 rounded-lg border border-[#27272a]">
            <button 
             onClick={() => setShowBear1(!showBear1)}
-            className={`px-3 py-1.5 rounded-md text-xs font-bold transition ${showBear1 ? 'bg-white shadow-sm text-red-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition ${showBear1 ? 'bg-white/10 shadow-sm text-red-400 border border-[#27272a]' : 'text-[#a1a1aa] hover:text-white'}`}
           >
             {showBear1 ? 'Comparing bear-1' : 'Hide bear-1'}
           </button>
@@ -27,15 +27,15 @@ export default function CompressionChart() {
       <div className="flex-grow">
         <ResponsiveContainer width="100%" height={320}>
           <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
             <XAxis 
               type="number" 
               dataKey="compression" 
               name="Reduction" 
               unit="%" 
               domain={[0, 100]}
-              label={{ value: 'Token Reduction %', position: 'bottom', offset: 0, fontSize: 12, fill: '#6B7280' }}
-              tick={{ fontSize: 11, fill: '#6B7280' }}
+              label={{ value: 'Token Reduction %', position: 'bottom', offset: 0, fontSize: 12, fill: '#a1a1aa' }}
+              tick={{ fontSize: 11, fill: '#a1a1aa' }}
             />
             <YAxis 
               type="number" 
@@ -43,20 +43,17 @@ export default function CompressionChart() {
               name="Accuracy Δ" 
               unit="%" 
               domain={[-1, 2]}
-              label={{ value: 'Accuracy Δ %', angle: -90, position: 'left', offset: 10, fontSize: 12, fill: '#6B7280' }}
-              tick={{ fontSize: 11, fill: '#6B7280' }}
+              label={{ value: 'Accuracy Δ %', angle: -90, position: 'left', offset: 10, fontSize: 12, fill: '#a1a1aa' }}
+              tick={{ fontSize: 11, fill: '#a1a1aa' }}
             />
             <ZAxis type="number" range={[100, 100]} />
             <Tooltip 
               cursor={{ strokeDasharray: '3 3' }}
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              contentStyle={{ borderRadius: '12px', border: '1px solid #27272a', backgroundColor: '#0a0a0a', color: '#fff' }}
               itemStyle={{ fontWeight: 'bold' }}
             />
-            <Legend verticalAlign="top" height={36} />
-            <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="4 4" />
-            
-            {/* Success Area Shading */}
-            <rect x="50%" y="-10%" width="50%" height="100%" fill="#10B981" fillOpacity={0.03} pointerEvents="none" />
+            <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#fff' }} />
+            <ReferenceLine y={0} stroke="#a1a1aa" strokeDasharray="4 4" />
             
             <Scatter 
               name="Distill" 
@@ -78,12 +75,12 @@ export default function CompressionChart() {
         </ResponsiveContainer>
       </div>
       
-      <div className="mt-6 p-5 bg-blue-50 border border-blue-100 rounded-2xl">
-        <div className="flex items-center gap-3 mb-2 text-blue-900">
+      <div className="mt-6 p-5 bg-blue-500/10 border border-blue-500/30 rounded-2xl">
+        <div className="flex items-center gap-3 mb-2 text-blue-400">
           <Target size={18} />
           <h4 className="font-bold text-sm">Superior Efficiency Frontier</h4>
         </div>
-        <p className="text-xs text-blue-800 leading-relaxed">
+        <p className="text-xs text-[#a1a1aa] leading-relaxed">
           Distill maintains positive accuracy gains even at 68% compression (θ=0.9). By using entropy-based identification, we remove tokens that are highly predictable given the context, whereas bear-1 relies on simpler importance weightings that often prune critical low-frequency semantic anchors.
         </p>
       </div>

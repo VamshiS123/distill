@@ -6,12 +6,12 @@ export default function LimitationsSection() {
   return (
     <section className="grid lg:grid-cols-2 gap-8">
       {/* Current Limitations */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-yellow-100 text-yellow-700 rounded-lg">
+          <div className="p-2 bg-yellow-500/20 text-yellow-400 rounded-lg border border-yellow-500/30">
             <AlertTriangle size={20} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">Current Limitations</h3>
+          <h3 className="text-xl font-bold text-white">Current Limitations</h3>
         </div>
         
         <ul className="space-y-4">
@@ -22,12 +22,12 @@ export default function LimitationsSection() {
       </div>
 
       {/* Future Work */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+          <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/30">
             <Lightbulb size={20} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">Future Work</h3>
+          <h3 className="text-xl font-bold text-white">Future Work</h3>
         </div>
         
         <ul className="space-y-4">
@@ -41,8 +41,8 @@ export default function LimitationsSection() {
 }
 
 const LimitItem: React.FC<{ text: string }> = ({ text }) => (
-  <li className="flex gap-3 text-sm text-gray-600 leading-relaxed font-medium">
-    <span className="text-blue-600 font-bold">•</span>
+  <li className="flex gap-3 text-sm text-[#a1a1aa] leading-relaxed font-medium">
+    <span className="text-blue-400 font-bold">•</span>
     {text}
   </li>
 );
