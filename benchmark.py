@@ -1,13 +1,15 @@
-import os
 import json
+import os
 import random
-import tiktoken
 import time
+
+import tiktoken
 from datasets import load_dataset
-from loguru import logger
-from distill import Distill
-from openai import OpenAI
 from dotenv import load_dotenv
+from loguru import logger
+from openai import OpenAI
+
+from distill import Distill
 
 # Configuration
 LIMIT_TOKENS = 100000
@@ -19,11 +21,22 @@ SEED = 42
 # GPT-4o-mini Pricing ($0.15 per 1M input tokens)
 PRICE_PER_1M_INPUT = 0.15
 
+load_dotenv()
 random.seed(SEED)
+
+# Initialize Distill once as a global variable
+logger.info("Initializing Distill model (this may take a moment)...")
+distill_model = Distill(model_name="./models", device_map="mps")
+
+# Initialize OpenAI Client
+logger.info("Initializing OpenAI endpoint...")
+openai_client = OpenAI()
+
 
 def get_token_count(text):
     enc = tiktoken.encoding_for_model(MODEL_NAME)
     return len(enc.encode(text, disallowed_special=()))
+
 
 def format_prompt(example, context_override=None):
     context = context_override if context_override is not None else example['context']
@@ -35,6 +48,7 @@ def format_prompt(example, context_override=None):
     prompt += "\nAnswer:"
     return prompt
 
+
 def get_llm_answer(client, prompt, retries=3):
     start_time = time.perf_counter()
     for i in range(retries):
@@ -42,7 +56,8 @@ def get_llm_answer(client, prompt, retries=3):
             response = client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant. Answer the multiple choice question with only the letter of the correct option (A, B, C, or D)."},
+                    {"role": "system",
+                     "content": "You are a helpful assistant. Answer the multiple choice question with only the letter of the correct option (A, B, C, or D)."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
@@ -51,41 +66,37 @@ def get_llm_answer(client, prompt, retries=3):
             duration = time.perf_counter() - start_time
             return response.choices[0].message.content.strip().upper(), duration
         except Exception as e:
-            logger.error(f"LLM Error (Attempt {i+1}): {e}")
+            logger.error(f"LLM Error (Attempt {i + 1}): {e}")
             time.sleep(2 ** i)
     return None, 0
 
+
 def main():
-    load_dotenv()
     if not os.getenv("OPENAI_API_KEY"):
         logger.error("OPENAI_API_KEY is not set. Please set it in .env or environment.")
         return
 
     logger.info("Loading LongBench v2 dataset...")
     ds = load_dataset("THUDM/LongBench-v2", split="train")
-    
+
     logger.info("Filtering and sampling dataset...")
     examples_with_counts = []
     for ex in ds:
         count = get_token_count(ex['context'])
         if count <= LIMIT_TOKENS:
             examples_with_counts.append(ex)
-    
+
     if len(examples_with_counts) > SAMPLE_SIZE:
         sampled_ds = random.sample(examples_with_counts, SAMPLE_SIZE)
     else:
         sampled_ds = examples_with_counts
-    
-    logger.info(f"Sampled {len(sampled_ds)} examples under {LIMIT_TOKENS} tokens.")
 
-    # Initialize Compressor and Client
-    distill = Distill(model_name="./models", device_map="mps")
-    openai_client = OpenAI()
+    logger.info(f"Sampled {len(sampled_ds)} examples under {LIMIT_TOKENS} tokens.")
 
     # Metrics Storage
     results = {
         "baseline": {"correct": 0, "total": 0, "tokens": 0, "inf_time": 0},
-        "distill":  {"correct": 0, "total": 0, "tokens": 0, "comp_time": 0, "inf_time": 0}
+        "distill": {"correct": 0, "total": 0, "tokens": 0, "comp_time": 0, "inf_time": 0}
     }
 
     output_file = "benchmark_results.jsonl"
@@ -95,18 +106,18 @@ def main():
     open(output_file, 'w').close()
 
     for i, ex in enumerate(sampled_ds):
-        logger.info(f"Processing example {i+1}/{len(sampled_ds)} (ID: {ex['_id']})")
-        
+        logger.info(f"Processing example {i + 1}/{len(sampled_ds)} (ID: {ex['_id']})")
+
         row_data = {"id": ex['_id'], "answer": ex['answer']}
 
         # --- 1. Baseline ---
         baseline_prompt = format_prompt(ex)
         baseline_tokens = get_token_count(baseline_prompt)
         logger.debug(f"Baseline Tokens: {baseline_tokens}")
-        
+
         baseline_ans, baseline_inf_time = get_llm_answer(openai_client, baseline_prompt)
         logger.debug(f"Baseline Answer: {baseline_ans}, Time: {baseline_inf_time:.2f}s")
-        
+
         if baseline_ans:
             if baseline_ans == ex['answer']:
                 results['baseline']['correct'] += 1
@@ -114,15 +125,16 @@ def main():
             results['baseline']['tokens'] += baseline_tokens
             results['baseline']['inf_time'] += baseline_inf_time
             row_data['baseline'] = baseline_ans
+            row_data['baseline_time'] = baseline_inf_time
 
         # --- 2. Distill ---
         try:
             # Compression (Retention Rate)
             t0 = time.perf_counter()
-            distill_res = distill.compress_prompt([ex['context']], rate=RETENTION_RATE)
+            distill_res = distill_model.compress_prompt([ex['context']], rate=RETENTION_RATE)
             dist_comp_time = time.perf_counter() - t0
             logger.debug(f"Distill Compression Time: {dist_comp_time:.2f}s (Rate: {RETENTION_RATE})")
-            
+
             # Inference with compressed context
             dist_context = distill_res['compressed_prompt']
             dist_prompt = format_prompt(ex, context_override=dist_context)
@@ -131,7 +143,7 @@ def main():
 
             dist_ans, dist_inf_time = get_llm_answer(openai_client, dist_prompt)
             logger.debug(f"Distill Answer: {dist_ans}, Time: {dist_inf_time:.2f}s")
-            
+
             if dist_ans:
                 if dist_ans == ex['answer']:
                     results['distill']['correct'] += 1
@@ -140,6 +152,8 @@ def main():
                 results['distill']['comp_time'] += dist_comp_time
                 results['distill']['inf_time'] += dist_inf_time
                 row_data['distill'] = dist_ans
+                row_data['distill_comp_time'] = dist_comp_time
+                row_data['distill_inf_time'] = dist_inf_time
         except Exception as e:
             logger.error(f"Distill Error on {ex['_id']}: {e}")
 
@@ -149,11 +163,11 @@ def main():
 
         # Periodic status logging
         if (i + 1) % 5 == 0:
-            logger.info(f"Progress: {i+1}/{len(sampled_ds)} iterations completed")
+            logger.info(f"Progress: {i + 1}/{len(sampled_ds)} iterations completed")
 
     # --- Generate Final Report ---
     logger.info("Generating Final Report...")
-    
+
     with open(report_file, "w") as f:
         header = f"LongBench v2 Benchmark: Distill vs Baseline (Model: {MODEL_NAME})\n"
         header += "=" * 65 + "\n"
@@ -163,7 +177,7 @@ def main():
         for key, stats in results.items():
             if stats['total'] == 0:
                 continue
-            
+
             # Aggregate stats
             accuracy = (stats['correct'] / stats['total']) * 100
             avg_tokens = stats['tokens'] / stats['total']
@@ -171,11 +185,11 @@ def main():
             avg_comp_time = stats.get('comp_time', 0) / stats['total']
             total_latency = avg_comp_time + avg_inf_time
             avg_cost = (avg_tokens / 1_000_000) * PRICE_PER_1M_INPUT
-            
+
             # Retention percentage relative to uncompressed
             baseline_avg_tokens = results['baseline']['tokens'] / max(1, results['baseline']['total'])
             retention_pct = (avg_tokens / baseline_avg_tokens) * 100
-            
+
             report = f"\n[{key.upper()}]\n"
             report += f"  Accuracy:          {accuracy:.2f}%\n"
             report += f"  Avg Tokens:        {avg_tokens:.0f} ({retention_pct:.1f}% of baseline)\n"
@@ -183,9 +197,10 @@ def main():
             report += f"  Avg Comp Time:     {avg_comp_time:.2f}s\n"
             report += f"  Avg Inf Time:      {avg_inf_time:.2f}s\n"
             report += f"  Avg Total Latency: {total_latency:.2f}s\n"
-            
+
             f.write(report)
             logger.info(report.strip())
+
 
 if __name__ == "__main__":
     main()
