@@ -14,12 +14,14 @@
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-syntax-highlighter": "^16.1.0",
     "recharts": "^3.6.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35",
