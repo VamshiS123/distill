@@ -2,7 +2,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LineChart, Line, CartesianGrid, Cell } from 'recharts';
 import { LATENCY_DATA, SCALING_DATA } from '../constants';
-import { Zap } from 'lucide-react';
+import { Database, ArrowRight } from 'lucide-react';
 
 export default function LatencyPanel() {
   return (
@@ -12,9 +12,15 @@ export default function LatencyPanel() {
           <h3 className="text-xl font-bold text-white mb-1">Latency Breakdown</h3>
           <p className="text-sm text-[#a1a1aa]">End-to-end response time analysis</p>
         </div>
-        <div className="bg-yellow-500/20 text-yellow-400 p-2 rounded-lg border border-yellow-500/30">
-          <Zap size={20} />
-        </div>
+        <a 
+          href="https://docs.google.com/spreadsheets/d/1aYxYx2z8T30bdD2DkAjMbkGibzsIgO4ff5lP-0X9gTU/edit?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-blue-500/20 text-blue-400 p-2 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-500/50 transition-all cursor-pointer flex items-center gap-1.5 group"
+        >
+          <Database size={18} />
+          <ArrowRight size={14} className="opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+        </a>
       </div>
       
       <div className="h-56 mb-8">
@@ -40,12 +46,12 @@ export default function LatencyPanel() {
       
       <div className="grid grid-cols-2 gap-4 mb-10">
         <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex flex-col items-center">
-          <span className="text-2xl font-black text-green-400 leading-none">2.3x</span>
+          <span className="text-2xl font-black text-green-400 leading-none">5.7x</span>
           <span className="text-[10px] text-green-300 font-bold uppercase mt-2">vs Baseline</span>
         </div>
-        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex flex-col items-center">
-          <span className="text-2xl font-black text-blue-400 leading-none">1.2x</span>
-          <span className="text-[10px] text-blue-300 font-bold uppercase mt-2">vs bear-1</span>
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex flex-col items-center">
+          <span className="text-2xl font-black text-red-400 leading-none">-204%*</span>
+          <span className="text-[10px] text-red-300 font-bold uppercase mt-2">vs bear-1</span>
         </div>
       </div>
       
@@ -67,7 +73,7 @@ export default function LatencyPanel() {
           </ResponsiveContainer>
         </div>
         <p className="mt-4 text-[10px] text-[#a1a1aa] text-center font-medium italic">
-          Performance advantage increases non-linearly with context length due to KV-cache reduction.
+          *The significant difference in compression overhead is likely attributable to superior server-grade hardware infrastructure.
         </p>
       </div>
     </div>
