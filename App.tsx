@@ -253,13 +253,11 @@ export default function App() {
         <footer className="bg-[#0a0a0a]/80 backdrop-blur-sm text-[#a1a1aa] py-12 mt-20 border-t border-[#27272a] relative z-10">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <h2 className="text-white font-bold text-xl mb-2">Distill</h2>
-            <p className="text-sm mb-6 max-w-md mx-auto">
+            <p className="text-sm mb-6 whitespace-nowrap">
               Advanced information-theoretic compression for high-performance LLM workflows.
             </p>
-            <div className="flex justify-center space-x-6 text-sm">
-              <a href="#" className="hover:text-white transition">Documentation</a>
-              <a href="#" className="hover:text-white transition">Github</a>
-              <a href="#" className="hover:text-white transition">Privacy</a>
+            <div className="flex justify-center mb-6">
+              <a href="#" className="text-sm hover:text-white transition">Github</a>
             </div>
             <p className="mt-8 text-xs">© 2026 The Token Company Challenge - Distill Project</p>
           </div>
