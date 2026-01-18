@@ -1,0 +1,5 @@
+{
+    "name": "Distill - LLM Input Compression Dashboard",
+    "description": "A high-performance dashboard for Distill, an information-theoretic LLM input compression model that removes low-entropy tokens to optimize inference.",
+    "requestFramePermissions": []
+  }
