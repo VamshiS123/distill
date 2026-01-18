@@ -291,6 +291,7 @@ def compress_prompt(
         )
         res["fn_labeled_original_prompt"] = word_label_lines
     return res`}
+            </pre>
           </div>
         )}
       </div>
