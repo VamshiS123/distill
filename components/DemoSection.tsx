@@ -61,46 +61,52 @@ export default function DemoSection() {
   return (
     <section id="demo-section" className="relative py-16 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white/5 backdrop-blur-sm rounded-3xl shadow-xl border border-[#27272a] p-8 md:p-10">
-          <h2 className="text-3xl font-bold text-white mb-2 text-center">Try Distill Compression</h2>
-          <p className="text-[#a1a1aa] text-center mb-8">See how Distill compresses your text while preserving semantic meaning</p>
+        <div className="bg-gradient-to-br from-white/8 via-white/5 to-white/3 backdrop-blur-md rounded-3xl shadow-2xl border border-white/10 p-10 md:p-12">
+          <div className="text-center mb-10">
+            <h2 className="text-4xl md:text-5xl font-light text-white mb-4 tracking-tight">
+              Try Distill Compression
+            </h2>
+            <p className="text-lg text-white/70 font-light max-w-2xl mx-auto leading-relaxed">
+              See how Distill compresses your text while preserving semantic meaning
+            </p>
+          </div>
           
           {/* Input and Output Sections */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Input Section */}
             <div className="flex flex-col">
-              <label className="text-white font-semibold mb-2">Input</label>
+              <label className="text-white/90 font-light text-sm uppercase tracking-wider mb-3">Input</label>
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="w-full h-48 bg-[#0a0a0a] border border-[#27272a] rounded-xl p-4 text-white placeholder-[#71717a] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+                className="w-full h-48 bg-black/40 border border-white/10 rounded-xl p-4 text-white/90 placeholder-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition font-light text-sm leading-relaxed"
                 placeholder="Enter your text here..."
               />
-              <div className="mt-2 text-sm text-[#a1a1aa]">
+              <div className="mt-3 text-xs text-white/60 font-mono tracking-wide">
                 {inputTokens} tokens
               </div>
             </div>
             
             {/* Output Section */}
             <div className="flex flex-col">
-              <label className="text-white font-semibold mb-2">Output</label>
+              <label className="text-white/90 font-light text-sm uppercase tracking-wider mb-3">Output</label>
               <textarea
                 value={outputText}
                 readOnly
-                className="w-full h-48 bg-[#0a0a0a] border border-[#27272a] rounded-xl p-4 text-white placeholder-[#71717a] resize-none focus:outline-none opacity-90"
+                className="w-full h-48 bg-black/40 border border-white/10 rounded-xl p-4 text-white/80 placeholder-white/40 resize-none focus:outline-none font-light text-sm leading-relaxed"
                 placeholder="Compressed output will appear here..."
               />
-              <div className="mt-2 text-sm text-[#a1a1aa]">
+              <div className="mt-3 text-xs text-white/60 font-mono tracking-wide">
                 {outputTokens} tokens
               </div>
             </div>
           </div>
           
           {/* Aggressiveness Slider */}
-          <div className="space-y-4">
+          <div className="space-y-5 mt-10 pt-8 border-t border-white/10">
             <div className="flex items-center justify-between">
-              <label className="text-white font-semibold text-lg">
-                Aggressiveness: <span className="text-blue-400">{aggressiveness.toFixed(1)}</span>
+              <label className="text-white/90 font-light text-base tracking-wide">
+                Aggressiveness: <span className="text-blue-400 font-normal ml-1">{aggressiveness.toFixed(1)}</span>
               </label>
             </div>
             
@@ -139,7 +145,7 @@ export default function DemoSection() {
               `}</style>
             </div>
             
-            <div className="flex justify-between text-xs text-[#a1a1aa]">
+            <div className="flex justify-between text-xs text-white/50 font-light tracking-wide">
               <span>0.1 (low)</span>
               <span>0.9 (high)</span>
             </div>

@@ -42,7 +42,7 @@ export default function HeroSection({ onTryDemo }: HeroSectionProps) {
     <section className="relative overflow-hidden text-white pt-24 pb-32">
       <div className="relative max-w-7xl mx-auto px-4 text-center z-10">
         <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-white text-sm font-medium mb-6 backdrop-blur-sm border border-[#27272a]">
-          ✨ Surpassed bear-1 in LongBench v2 Performance
+          Up to par with bear-1 in LongBench v2 Performance
         </div>
         
         <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
