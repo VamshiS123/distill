@@ -1,18 +1,9 @@
 from typing import List, Dict, Tuple
 import copy
-import re
 import numpy as np
-import torch
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from loguru import logger
-from .utils import (
-    TokenClfDataset, 
-    merge_token_to_word, 
-    token_prob_to_word_prob, 
-    chunk_context, 
-    get_token_length
-)
+from .inference import run_inference_on_chunks
+from .text_ops import get_token_length, chunk_context, split_string_to_words
 
 def compute_context_probs(
     context_list: list,
@@ -34,63 +25,35 @@ def compute_context_probs(
         for c in chunks:
             chunk_list.append(c)
 
-    dataset = TokenClfDataset(
-        chunk_list, tokenizer=tokenizer, max_len=max_seq_len
-    )
-    dataloader = DataLoader(
-        dataset, batch_size=max_batch_size, shuffle=False, drop_last=False
+    inference_gen = run_inference_on_chunks(
+        chunk_list,
+        model,
+        tokenizer,
+        device,
+        max_seq_len,
+        max_batch_size,
+        special_tokens,
+        model_name,
+        token_to_word,
+        force_tokens,
+        token_map,
+        force_reserve_digit,
     )
 
     chunk_probs = []
     chunk_words = []
-    with torch.no_grad():
-        for batch in dataloader:
-            ids = batch["ids"].to(device, dtype=torch.long)
-            mask = batch["mask"].to(device, dtype=torch.long) == 1
-
-            outputs = model(input_ids=ids, attention_mask=mask)
-            loss, logits = outputs.loss, outputs.logits
-            probs = F.softmax(logits, dim=-1)
-
-            for j in range(ids.shape[0]):
-                _probs = probs[j, :, 1]
-                _ids = ids[j]
-                _mask = mask[j]
-
-                active_probs = torch.masked_select(_probs, _mask)
-                active_ids = torch.masked_select(_ids, _mask)
-
-                tokens = tokenizer.convert_ids_to_tokens(
-                    active_ids.squeeze().tolist()
-                )
-                token_probs = [prob for prob in active_probs.cpu().numpy()]
-
-                (
-                    words,
-                    valid_token_probs,
-                    valid_token_probs_no_force,
-                ) = merge_token_to_word(
-                    tokens,
-                    token_probs,
-                    force_tokens=force_tokens,
-                    token_map=token_map,
-                    force_reserve_digit=force_reserve_digit,
-                    special_tokens=special_tokens,
-                    model_name=model_name,
-                )
-                word_probs_no_force = token_prob_to_word_prob(
-                    valid_token_probs_no_force, convert_mode=token_to_word
-                )
-
-                chunk_words.append(words)
-                chunk_probs.append(word_probs_no_force)
-            logger.trace("Processed batch in compute_context_probs")
+    
+    for words, word_probs, word_probs_no_force in inference_gen:
+        chunk_words.append(words)
+        chunk_probs.append(word_probs_no_force)
+    
+    logger.trace("Processed all batches in compute_context_probs")
 
     prev_idx = 0
     context_probs = []
     context_words = []
-    for chunk_list in context_list:
-        n_chunk = len(chunk_list)
+    for chunk_list_group in context_list:
+        n_chunk = len(chunk_list_group)
         context_probs.append([])
         context_words.append([])
         for i in range(n_chunk):
@@ -120,11 +83,6 @@ def compress_chunks(
 ):
     logger.debug(f"Executing compress_chunks with reduce_rate={reduce_rate}, drop_consecutive={drop_consecutive}")
 
-    def split_string_to_words(input_string):
-        pattern = r'\b\w+\b|[<>=/!@#$%^&*()?":{}|\\`~;_+-]'
-        result = re.findall(pattern, input_string)
-        return result
-
     if reduce_rate <= 0:
         logger.debug("Reduce rate <= 0, skipping compression loop.")
         words, word_labels = [], []
@@ -149,99 +107,77 @@ def compress_chunks(
         for c in chunks:
             chunk_list.append(c)
 
-    dataset = TokenClfDataset(
-        chunk_list, tokenizer=tokenizer, max_len=max_seq_len
-    )
-    dataloader = DataLoader(
-        dataset, batch_size=max_batch_size, shuffle=False, drop_last=False
+    inference_gen = run_inference_on_chunks(
+        chunk_list,
+        model,
+        tokenizer,
+        device,
+        max_seq_len,
+        max_batch_size,
+        special_tokens,
+        model_name,
+        token_to_word,
+        force_tokens,
+        token_map,
+        force_reserve_digit,
     )
 
     compressed_chunk_list = []
     word_list = []
     word_label_list = []
-    with torch.no_grad():
-        for batch in dataloader:
-            ids = batch["ids"].to(device, dtype=torch.long)
-            mask = batch["mask"].to(device, dtype=torch.long) == 1
 
-            outputs = model(input_ids=ids, attention_mask=mask)
-            loss, logits = outputs.loss, outputs.logits
-            probs = F.softmax(logits, dim=-1)
+    for words, word_probs, _ in inference_gen:
+        # Note: compress_chunks uses 'word_probs' (which includes forced tokens as 1.0)
+        
+        if drop_consecutive:
+            threshold = np.percentile(word_probs, int(100 * reduce_rate))
+            is_token_between = False
+            prev = None
+            for i, (word, word_prob) in enumerate(zip(words, word_probs)):
+                if word in force_tokens:
+                    if is_token_between:
+                        is_token_between = False
+                    elif not is_token_between and word == prev:
+                        word_probs[i] = 0.0
+                    prev = word
+                else:
+                    is_token_between |= word_prob > threshold
 
-            for j in range(ids.shape[0]):
-                chunk_probs = probs[j, :, 1]
-                chunk_ids = ids[j]
-                chunk_mask = mask[j]
+        new_token_probs = []
+        for word, word_prob in zip(words, word_probs):
+            num_token = len(oai_tokenizer.encode(word))
+            new_token_probs.extend([word_prob for _ in range(num_token)])
 
-                active_probs = torch.masked_select(chunk_probs, chunk_mask)
-                active_ids = torch.masked_select(chunk_ids, chunk_mask)
+        threshold = np.percentile(
+            new_token_probs, int(100 * reduce_rate + 1)
+        )
 
-                tokens = tokenizer.convert_ids_to_tokens(
-                    active_ids.squeeze().tolist()
-                )
-                token_probs = [prob for prob in active_probs.cpu().numpy()]
+        keep_words = []
+        word_labels = []
+        assert len(words) == len(word_probs)
+        for word, word_prob in zip(words, word_probs):
+            if word_prob > threshold or (
+                    threshold == 1.0 and word_prob == threshold
+            ):
+                if (
+                        drop_consecutive
+                        and word in force_tokens
+                        and len(keep_words) > 0
+                        and keep_words[-1] == word
+                ):
+                    word_labels.append(0)
+                else:
+                    keep_words.append(word)
+                    word_labels.append(1)
+            else:
+                word_labels.append(0)
+        keep_str = tokenizer.convert_tokens_to_string(keep_words)
 
-                words, valid_token_probs, _ = merge_token_to_word(
-                    tokens=tokens,
-                    token_probs=token_probs,
-                    force_tokens=force_tokens,
-                    token_map=token_map,
-                    force_reserve_digit=force_reserve_digit,
-                    special_tokens=special_tokens,
-                    model_name=model_name,
-                )
-                word_probs = token_prob_to_word_prob(
-                    valid_token_probs, convert_mode=token_to_word
-                )
-
-                if drop_consecutive:
-                    threshold = np.percentile(word_probs, int(100 * reduce_rate))
-                    is_token_between = False
-                    prev = None
-                    for i, (word, word_prob) in enumerate(zip(words, word_probs)):
-                        if word in force_tokens:
-                            if is_token_between:
-                                is_token_between = False
-                            elif not is_token_between and word == prev:
-                                word_probs[i] = 0.0
-                            prev = word
-                        else:
-                            is_token_between |= word_prob > threshold
-
-                new_token_probs = []
-                for word, word_prob in zip(words, word_probs):
-                    num_token = len(oai_tokenizer.encode(word))
-                    new_token_probs.extend([word_prob for _ in range(num_token)])
-
-                threshold = np.percentile(
-                    new_token_probs, int(100 * reduce_rate + 1)
-                )
-
-                keep_words = []
-                word_labels = []
-                assert len(words) == len(word_probs)
-                for word, word_prob in zip(words, word_probs):
-                    if word_prob > threshold or (
-                            threshold == 1.0 and word_prob == threshold
-                    ):
-                        if (
-                                drop_consecutive
-                                and word in force_tokens
-                                and len(keep_words) > 0
-                                and keep_words[-1] == word
-                        ):
-                            word_labels.append(0)
-                        else:
-                            keep_words.append(word)
-                            word_labels.append(1)
-                    else:
-                        word_labels.append(0)
-                keep_str = tokenizer.convert_tokens_to_string(keep_words)
-
-                compressed_chunk_list.append(keep_str)
-                word_list.append(words[:])
-                word_label_list.append(word_labels[:])
-            logger.trace("Processed batch in compress_chunks")
+        compressed_chunk_list.append(keep_str)
+        word_list.append(words[:])
+        word_label_list.append(word_labels[:])
+    
+    logger.trace("Processed all batches in compress_chunks")
 
     compressed_context_list = []
     original_word_list = []

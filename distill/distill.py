@@ -5,7 +5,7 @@ from typing import List
 from .loading import load_model_and_tokenizer, init_distill_config
 from .compression import compress_prompt_pipeline
 from .recovery import recover_response
-from .utils import get_token_length
+from .text_ops import get_token_length
 
 class Distill:
     def __init__(
