@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChevronDown, ChevronUp, Code2, Cpu, Zap, Share2 } from 'lucide-react';
 
 export default function ApproachSection() {
@@ -53,18 +55,26 @@ export default function ApproachSection() {
         </button>
 
         {showCode && (
-          <div className="mt-6 bg-[#0D1117] rounded-2xl p-8 overflow-x-auto border border-[#27272a] animate-fade-in shadow-2xl">
-            <pre className="text-[13px] leading-relaxed text-blue-100">
-              {`import numpy as np
-import copy
-import logging
-from typing import List
-
-logger = logging.getLogger(__name__)
-
-def compress_prompt(
-    self,
-    context: List[str],
+          <div className="mt-6 bg-[#0D1117] rounded-2xl overflow-hidden border border-[#27272a] animate-fade-in shadow-2xl">
+            <SyntaxHighlighter
+              language="python"
+              style={vscDarkPlus}
+              customStyle={{ margin: 0, padding: '2rem', fontSize: '13px', lineHeight: '1.625' }}
+              wrapLines={true}
+            >
+              {`
+def compress_prompt_pipeline(
+    context,
+    model,
+    tokenizer,
+    device,
+    oai_tokenizer,
+    max_seq_len,
+    max_batch_size,
+    max_force_token,
+    special_tokens,
+    added_tokens,
+    model_name,
     rate: float = 0.5,
     target_token: int = -1,
     use_context_level_filter: bool = False,
@@ -74,21 +84,22 @@ def compress_prompt(
     context_level_target_token: int = -1,
     force_context_ids: List[int] = [],
     return_word_label: bool = False,
-    word_sep: str = "\\t\\t|\\t\\t",
+    word_sep: str = "\t\t|\t\t",
     label_sep: str = " ",
     token_to_word: str = "mean",
     force_tokens: List[str] = [],
     force_reserve_digit: bool = False,
     drop_consecutive: bool = False,
-    chunk_end_tokens: List[str] = [".", "\\n"],
+    chunk_end_tokens: List[str] = [".", "\n"],
 ):
     logger.info(
-        f"Compressing prompt. Context chunks: {len(context) if isinstance(context, list) else 1}, Rate: {rate}, Target Token: {target_token}")
-    assert len(force_tokens) <= self.max_force_token
+        f"Compressing prompt. Context chunks: {len(context) if isinstance(context, list) else 1}, Rate: {rate}, Target Token: {target_token}"
+    )
+    assert len(force_tokens) <= max_force_token
     token_map = {}
     for i, t in enumerate(force_tokens):
-        if len(self.tokenizer.tokenize(t)) != 1:
-            token_map[t] = self.added_tokens[i]
+        if len(tokenizer.tokenize(t)) != 1:
+            token_map[t] = added_tokens[i]
     chunk_end_tokens = copy.deepcopy(chunk_end_tokens)
     for c in chunk_end_tokens:
         if c in token_map:
@@ -106,13 +117,13 @@ def compress_prompt(
     n_original_token = 0
     context_chunked = []
     for i in range(len(context)):
-        n_original_token += self.get_token_length(
-            context[i], use_oai_tokenizer=True
+        n_original_token += get_token_length(
+            context[i], tokenizer=None, use_oai_tokenizer=True, oai_tokenizer=oai_tokenizer
         )
         for ori_token, new_token in token_map.items():
             context[i] = context[i].replace(ori_token, new_token)
         context_chunked.append(
-            self.__chunk_context(context[i], chunk_end_tokens=chunk_end_tokens)
+            chunk_context(context[i], chunk_end_tokens=chunk_end_tokens, tokenizer=tokenizer, max_seq_len=max_seq_len)
         )
 
     logger.info(f"Original token count: {n_original_token}")
@@ -141,8 +152,15 @@ def compress_prompt(
             )
 
         logger.debug(f"Calculating context probabilities. context_level_rate={context_level_rate}")
-        context_probs, context_words = self.__get_context_prob(
+        context_probs, context_words = compute_context_probs(
             context_chunked,
+            model=model,
+            tokenizer=tokenizer,
+            device=device,
+            max_seq_len=max_seq_len,
+            max_batch_size=max_batch_size,
+            special_tokens=special_tokens,
+            model_name=model_name,
             token_to_word=token_to_word,
             force_tokens=force_tokens,
             token_map=token_map,
@@ -166,7 +184,7 @@ def compress_prompt(
         n_reserved_token = 0
         for chunks in reserved_context:
             for c in chunks:
-                n_reserved_token += self.get_token_length(c, use_oai_tokenizer=True)
+                n_reserved_token += get_token_length(c, tokenizer=None, use_oai_tokenizer=True, oai_tokenizer=oai_tokenizer)
 
         logger.info(f"Tokens after context filtering: {n_reserved_token}")
 
@@ -175,8 +193,16 @@ def compress_prompt(
 
         if use_token_level_filter:
             logger.debug("Applying token level filter (with context filter).")
-            compressed_context, word_list, word_label_list = self.__compress(
+            compressed_context, word_list, word_label_list = compress_chunks(
                 reserved_context,
+                model=model,
+                tokenizer=tokenizer,
+                device=device,
+                oai_tokenizer=oai_tokenizer,
+                max_seq_len=max_seq_len,
+                max_batch_size=max_batch_size,
+                special_tokens=special_tokens,
+                model_name=model_name,
                 reduce_rate=max(0, 1 - rate),
                 token_to_word=token_to_word,
                 force_tokens=force_tokens,
@@ -186,8 +212,16 @@ def compress_prompt(
             )
         else:
             logger.debug("Skipping token level filter (with context filter).")
-            compressed_context, word_list, word_label_list = self.__compress(
+            compressed_context, word_list, word_label_list = compress_chunks(
                 reserved_context,
+                model=model,
+                tokenizer=tokenizer,
+                device=device,
+                oai_tokenizer=oai_tokenizer,
+                max_seq_len=max_seq_len,
+                max_batch_size=max_batch_size,
+                special_tokens=special_tokens,
+                model_name=model_name,
                 reduce_rate=0,
                 token_to_word=token_to_word,
                 force_tokens=force_tokens,
@@ -198,7 +232,7 @@ def compress_prompt(
 
         n_compressed_token = 0
         for c in compressed_context:
-            n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
+            n_compressed_token += get_token_length(c, tokenizer=None, use_oai_tokenizer=True, oai_tokenizer=oai_tokenizer)
 
         logger.info(f"Compressed token count: {n_compressed_token}")
 
@@ -206,13 +240,13 @@ def compress_prompt(
             1 if n_compressed_token == 0 else n_original_token / n_compressed_token
         )
         res = {
-            "compressed_prompt": "\\n\\n".join(compressed_context),
+            "compressed_prompt": "\n\n".join(compressed_context),
             "compressed_prompt_list": compressed_context,
             "origin_tokens": n_original_token,
             "compressed_tokens": n_compressed_token,
             "ratio": f"{ratio:.1f}x",
             "rate": f"{1 / ratio * 100:.1f}%",
-            "saving": f", Saving \\\${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
+            "saving": f", Saving \${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
         }
         if return_word_label:
             words = []
@@ -240,8 +274,16 @@ def compress_prompt(
 
     if use_token_level_filter:
         logger.debug("Applying token level filter.")
-        compressed_context, word_list, word_label_list = self.__compress(
+        compressed_context, word_list, word_label_list = compress_chunks(
             context_chunked,
+            model=model,
+            tokenizer=tokenizer,
+            device=device,
+            oai_tokenizer=oai_tokenizer,
+            max_seq_len=max_seq_len,
+            max_batch_size=max_batch_size,
+            special_tokens=special_tokens,
+            model_name=model_name,
             reduce_rate=max(0, 1 - rate),
             token_to_word=token_to_word,
             force_tokens=force_tokens,
@@ -251,8 +293,16 @@ def compress_prompt(
         )
     else:
         logger.debug("Skipping token level filter.")
-        compressed_context, word_list, word_label_list = self.__compress(
+        compressed_context, word_list, word_label_list = compress_chunks(
             context_chunked,
+            model=model,
+            tokenizer=tokenizer,
+            device=device,
+            oai_tokenizer=oai_tokenizer,
+            max_seq_len=max_seq_len,
+            max_batch_size=max_batch_size,
+            special_tokens=special_tokens,
+            model_name=model_name,
             reduce_rate=0,
             token_to_word=token_to_word,
             force_tokens=force_tokens,
@@ -263,7 +313,7 @@ def compress_prompt(
 
     n_compressed_token = 0
     for c in compressed_context:
-        n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
+        n_compressed_token += get_token_length(c, tokenizer=None, use_oai_tokenizer=True, oai_tokenizer=oai_tokenizer)
 
     logger.info(f"Compressed token count: {n_compressed_token}")
 
@@ -271,13 +321,13 @@ def compress_prompt(
         1 if n_compressed_token == 0 else n_original_token / n_compressed_token
     )
     res = {
-        "compressed_prompt": "\\n\\n".join(compressed_context),
+        "compressed_prompt": "\n\n".join(compressed_context),
         "compressed_prompt_list": compressed_context,
         "origin_tokens": n_original_token,
         "compressed_tokens": n_compressed_token,
         "ratio": f"{ratio:.1f}x",
         "rate": f"{1 / ratio * 100:.1f}%",
-        "saving": f", Saving \\\${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
+        "saving": f", Saving \${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
     }
     if return_word_label:
         words = []
@@ -290,8 +340,9 @@ def compress_prompt(
             [f"{word}{label_sep}{label}" for word, label in zip(words, labels)]
         )
         res["fn_labeled_original_prompt"] = word_label_lines
-    return res`}
-            </pre>
+    return res
+`}
+            </SyntaxHighlighter>
           </div>
         )}
       </div>
