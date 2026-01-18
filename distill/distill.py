@@ -36,7 +36,7 @@ class Distill:
     ):
         logger.info(f"Initializing Distill with model_name={model_name}, device_map={device_map}")
         self.model_name = model_name
-        self.oai_tokenizer = tiktoken.encoding_for_model("gpt-5")
+        self.oai_tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
 
         self.load_model(model_name, device_map, model_config)
         self._init_distill(**distill_config)
