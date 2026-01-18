@@ -1,4 +1,8 @@
 import json
+import os
+
+from loguru import logger
+from tokenc import TokenClient
 
 from distill import Distill
 
@@ -38,6 +42,19 @@ compressor = Distill(
     model_name="./models",
     device_map="mps"
 )
-compressed_prompt = compressor.compress_prompt(prompt, force_tokens=['\n', '?'])
+compressed_prompt = compressor.compress_prompt(prompt, rate=0.5, force_tokens=['\n', '?'])
 
-print(json.dumps(compressed_prompt, indent=2))
+logger.info(json.dumps(compressed_prompt, indent=2))
+
+client = TokenClient(api_key=os.getenv("TTC_API_KEY"))
+
+response = client.compress_input(
+    input=prompt[0],
+    aggressiveness=0.5
+)
+
+logger.info(f"Compressed text: {response.output}")
+logger.info(f"Original tokens: {response.original_input_tokens}")
+logger.info(f"Compressed tokens: {response.output_tokens}")
+logger.info(f"Tokens saved: {response.tokens_saved}")
+logger.info(f"Compression ratio: {response.compression_ratio:.2f}x")
