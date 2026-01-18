@@ -1,0 +1,18 @@
+LongBench v2 Benchmark: Distill vs Baseline (Model: gpt-4o-mini)
+=================================================================
+
+[BASELINE]
+  Accuracy:          30.67%
+  Avg Tokens:        46043 (100.0% of baseline)
+  Avg Cost:          $0.006906
+  Avg Comp Time:     0.00s
+  Avg Inf Time:      12.06s
+  Avg Total Latency: 12.06s
+
+[DISTILL]
+  Accuracy:          27.67%
+  Avg Tokens:        22034 (47.9% of baseline)
+  Avg Cost:          $0.003305
+  Avg Comp Time:     5.50s
+  Avg Inf Time:      2.11s
+  Avg Total Latency: 7.60s
