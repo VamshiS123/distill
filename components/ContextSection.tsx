@@ -71,11 +71,20 @@ export default function ContextSection() {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <p className="text-blue-100 text-sm leading-relaxed mb-6">
-              A global legal firm utilized Distill to process 500-page case files. Previously, prompts had to be chunked across multiple calls, losing global coherence. With Distill, entire files were compressed to fit within a single 128K context window.
+              We tested Distill on 300-page case files formatted as{' '}
+              <a 
+                href="https://www.ca5.uscourts.gov/documents/SampleBriefs.pdf" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-300 hover:text-blue-200 underline decoration-blue-400/50 hover:decoration-blue-300 transition-colors"
+              >
+                Fifth Circuit appellate briefs
+              </a>
+              . Previously, prompts had to be chunked across multiple calls, losing global coherence. With Distill, entire files were compressed to fit within a single 128K context window.
             </p>
             <div className="flex gap-4">
               <div className="bg-white/10 rounded-lg p-3 text-center flex-1 border border-white/10">
-                <div className="text-xl font-black">62%</div>
+                <div className="text-xl font-black">68%</div>
                 <div className="text-[10px] font-bold uppercase text-blue-200">Cost Reduced</div>
               </div>
               <div className="bg-white/10 rounded-lg p-3 text-center flex-1 border border-white/10">
@@ -87,9 +96,9 @@ export default function ContextSection() {
           <div className="bg-black/20 rounded-xl p-6 border border-white/10 backdrop-blur-sm">
             <div className="font-mono text-xs space-y-2 opacity-80">
               <div className="text-blue-300"># compression_stats.log</div>
-              <div>[INPUT] Original: 421,490 tokens</div>
+              <div>[INPUT] Original: 252,894 tokens</div>
               <div>[PROCESS] Entropy Estimator: 42ms</div>
-              <div className="text-green-300">[OUTPUT] Compressed: 134,876 tokens</div>
+              <div className="text-green-300">[OUTPUT] Compressed: 80,926 tokens</div>
               <div>[RESULT] Reduction: 68.0% | Semantic Drift: &lt;0.1%</div>
             </div>
           </div>
