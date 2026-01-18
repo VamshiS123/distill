@@ -8,6 +8,7 @@ import numpy as np
 import tiktoken
 import torch
 import torch.nn.functional as F
+from loguru import logger
 from torch.utils.data import DataLoader
 from transformers import (
     AutoConfig,
@@ -33,6 +34,7 @@ class Distill:
             model_config: dict = {},
             distill_config: dict = {},
     ):
+        logger.info(f"Initializing Distill with model_name={model_name}, device_map={device_map}")
         self.model_name = model_name
         self.oai_tokenizer = tiktoken.encoding_for_model("gpt-5")
 
@@ -44,6 +46,7 @@ class Distill:
             max_batch_size: int = 50,
             max_force_token: int = 100,
     ):
+        logger.debug(f"Initializing Distill internal config: max_batch_size={max_batch_size}, max_force_token={max_force_token}")
         seed_everything(42)
         self.max_batch_size = max_batch_size
         self.max_seq_len = 512
@@ -61,6 +64,7 @@ class Distill:
             {"additional_special_tokens": self.added_tokens}
         )
         self.model.resize_token_embeddings(len(self.tokenizer))
+        logger.debug("Distill initialization complete.")
 
     def load_model(
             self,
@@ -68,26 +72,35 @@ class Distill:
             device_map: str = "cuda",
             model_config: dict = {},
     ):
+        logger.info(f"Loading model: {model_name} on {device_map}")
         trust_remote_code = model_config.get("trust_remote_code", True)
         if "trust_remote_code" not in model_config:
             model_config["trust_remote_code"] = trust_remote_code
+        
+        logger.debug("Loading AutoConfig...")
         config = AutoConfig.from_pretrained(model_name, **model_config)
+        logger.debug("Loading AutoTokenizer...")
         tokenizer = AutoTokenizer.from_pretrained(model_name, **model_config)
         if model_config.get("pad_to_left", True):
             tokenizer.padding_side = "left"
             tokenizer.pad_token_id = (
                 config.pad_token_id if config.pad_token_id else tokenizer.eos_token_id
             )
+        
         MODEL_CLASS = (
             AutoModelForTokenClassification
             if any("ForTokenClassification" in ar for ar in config.architectures)
             else AutoModelForCausalLM
         )
+        logger.debug(f"Selected model class: {MODEL_CLASS.__name__}")
+
         self.device = (
             device_map
             if any(key in device_map for key in ["cuda", "cpu", "mps"])
             else "cuda"
         )
+        logger.info(f"Using device: {self.device}")
+
         if "cuda" in device_map or "cpu" in device_map:
             model = MODEL_CLASS.from_pretrained(
                 model_name,
@@ -110,6 +123,7 @@ class Distill:
         self.tokenizer = tokenizer
         self.model = model
         self.max_position_embeddings = config.max_position_embeddings
+        logger.info("Model loaded successfully.")
 
     def __call__(self, *args, **kwargs):
         return self.compress_prompt(*args, **kwargs)
@@ -134,6 +148,7 @@ class Distill:
             drop_consecutive: bool = False,
             chunk_end_tokens: List[str] = [".", "\n"],
     ):
+        logger.info(f"Compressing prompt. Context chunks: {len(context) if isinstance(context, list) else 1}, Rate: {rate}, Target Token: {target_token}")
         assert len(force_tokens) <= self.max_force_token
         token_map = {}
         for i, t in enumerate(force_tokens):
@@ -151,6 +166,7 @@ class Distill:
 
         if len(context) == 1 and use_context_level_filter:
             use_context_level_filter = False
+            logger.debug("Context level filter disabled because context length is 1.")
 
         n_original_token = 0
         context_chunked = []
@@ -163,8 +179,11 @@ class Distill:
             context_chunked.append(
                 self.__chunk_context(context[i], chunk_end_tokens=chunk_end_tokens)
             )
+        
+        logger.info(f"Original token count: {n_original_token}")
 
         if use_context_level_filter:
+            logger.debug("Applying context level filter.")
             # want use_context_level_filter but do not specify any parameters in context level?
             # we will set context_level_rate = (rate + 1.0) / 2 if specify rate or target_token * 2 if specify target_token
             if (
@@ -187,7 +206,8 @@ class Distill:
                 context_level_rate = min(
                     context_level_target_token / n_original_token, 1.0
                 )
-
+            
+            logger.debug(f"Calculating context probabilities. context_level_rate={context_level_rate}")
             context_probs, context_words = self.__get_context_prob(
                 context_chunked,
                 token_to_word=token_to_word,
@@ -199,6 +219,7 @@ class Distill:
             threshold = np.percentile(
                 context_probs, int(100 * (1 - context_level_rate))
             )
+            logger.debug(f"Context probability threshold: {threshold}")
 
             reserved_context = []
             context_label = [False] * len(context_probs)
@@ -208,14 +229,19 @@ class Distill:
                 ):
                     reserved_context.append(context_chunked[i])
                     context_label[i] = True
+            
             n_reserved_token = 0
             for chunks in reserved_context:
                 for c in chunks:
                     n_reserved_token += self.get_token_length(c, use_oai_tokenizer=True)
+            
+            logger.info(f"Tokens after context filtering: {n_reserved_token}")
+
             if target_token >= 0:
                 rate = min(target_token / n_reserved_token, 1.0)
 
             if use_token_level_filter:
+                logger.debug("Applying token level filter (with context filter).")
                 compressed_context, word_list, word_label_list = self.__compress(
                     reserved_context,
                     reduce_rate=max(0, 1 - rate),
@@ -226,6 +252,7 @@ class Distill:
                     drop_consecutive=drop_consecutive,
                 )
             else:
+                logger.debug("Skipping token level filter (with context filter).")
                 compressed_context, word_list, word_label_list = self.__compress(
                     reserved_context,
                     reduce_rate=0,
@@ -239,6 +266,9 @@ class Distill:
             n_compressed_token = 0
             for c in compressed_context:
                 n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
+            
+            logger.info(f"Compressed token count: {n_compressed_token}")
+            
             ratio = (
                 1 if n_compressed_token == 0 else n_original_token / n_compressed_token
             )
@@ -249,6 +279,7 @@ class Distill:
                 "compressed_tokens": n_compressed_token,
                 "ratio": f"{ratio:.1f}x",
                 "rate": f"{1 / ratio * 100:.1f}%",
+                "saving": f", Saving ${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
             }
             if return_word_label:
                 words = []
@@ -268,10 +299,14 @@ class Distill:
                 res["fn_labeled_original_prompt"] = word_label_lines
             return res
 
+        # Normal path without context level filter
         if target_token > 0:
             rate = min(target_token / n_original_token, 1.0)
+        
+        logger.debug(f"Effective compression rate: {rate}")
 
         if use_token_level_filter:
+            logger.debug("Applying token level filter.")
             compressed_context, word_list, word_label_list = self.__compress(
                 context_chunked,
                 reduce_rate=max(0, 1 - rate),
@@ -282,6 +317,7 @@ class Distill:
                 drop_consecutive=drop_consecutive,
             )
         else:
+            logger.debug("Skipping token level filter.")
             compressed_context, word_list, word_label_list = self.__compress(
                 context_chunked,
                 reduce_rate=0,
@@ -295,8 +331,12 @@ class Distill:
         n_compressed_token = 0
         for c in compressed_context:
             n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
-        saving = (n_original_token - n_compressed_token) * 0.06 / 1000
-        ratio = 1 if n_compressed_token == 0 else n_original_token / n_compressed_token
+        
+        logger.info(f"Compressed token count: {n_compressed_token}")
+        
+        ratio = (
+            1 if n_compressed_token == 0 else n_original_token / n_compressed_token
+        )
         res = {
             "compressed_prompt": "\n\n".join(compressed_context),
             "compressed_prompt_list": compressed_context,
@@ -304,7 +344,7 @@ class Distill:
             "compressed_tokens": n_compressed_token,
             "ratio": f"{ratio:.1f}x",
             "rate": f"{1 / ratio * 100:.1f}%",
-            "saving": f", Saving ${saving:.1f} in GPT-4.",
+            "saving": f", Saving ${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
         }
         if return_word_label:
             words = []
@@ -338,6 +378,7 @@ class Distill:
             compressed_prompt: str,
             response: str,
     ):
+        logger.info("Recovering response...")
         def match_from_compressed(response_word):
             response_input_ids = self.tokenizer(
                 response_word, add_special_tokens=False
@@ -377,6 +418,7 @@ class Distill:
             "input_ids"
         ]
         N, M = len(response_words), len(original_input_ids)
+        logger.debug(f"Recovering: Response words={N}, Original input ids={M}")
         recovered_response_words = []
         l = 0
         while l < N:
@@ -393,6 +435,7 @@ class Distill:
             match_words = match_from_compressed(" ".join(response_words[l: r + 1]))
             recovered_response_words.append(match_words)
             l = r + 1
+        logger.info("Recovery complete.")
         return " ".join(recovered_response_words)
 
     def __get_context_prob(
@@ -403,6 +446,7 @@ class Distill:
             token_map: dict = {},
             force_reserve_digit: bool = False,
     ):
+        logger.debug("Computing context probabilities...")
         chunk_list = []
         for chunks in context_list:
             for c in chunks:
@@ -456,6 +500,7 @@ class Distill:
 
                     chunk_words.append(words)
                     chunk_probs.append(word_probs_no_force)
+                logger.trace("Processed batch in __get_context_prob")
 
         prev_idx = 0
         context_probs = []
@@ -472,6 +517,7 @@ class Distill:
         return context_probs, context_words
 
     def __chunk_context(self, origin_text, chunk_end_tokens):
+        # logger.trace("Chunking context...")
         # leave 2 token for CLS and SEP
         max_len = self.max_seq_len - 2
         origin_list = []
@@ -560,12 +606,14 @@ class Distill:
             force_reserve_digit: bool = False,
             drop_consecutive: bool = False,
     ):
+        logger.debug(f"Executing __compress with reduce_rate={reduce_rate}, drop_consecutive={drop_consecutive}")
         def split_string_to_words(input_string):
             pattern = r'\b\w+\b|[<>=/!@#$%^&*()?":{}|\\`~;_+-]'
             result = re.findall(pattern, input_string)
             return result
 
         if reduce_rate <= 0:
+            logger.debug("Reduce rate <= 0, skipping compression loop.")
             words, word_labels = [], []
             for i in range(len(context_list)):
                 chunk_list = context_list[i]
@@ -678,6 +726,7 @@ class Distill:
                     compressed_chunk_list.append(keep_str)
                     word_list.append(words[:])
                     word_label_list.append(word_labels[:])
+                logger.trace("Processed batch in __compress")
 
         compressed_context_list = []
         original_word_list = []
