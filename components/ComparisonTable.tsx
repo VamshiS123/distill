@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle2, Minus, Info } from 'lucide-react';
+import { CheckCircle2, Minus, Info, XCircle } from 'lucide-react';
 import { COMPARISON_DATA } from '../constants';
 import { MetricRow } from '../types';
 
@@ -69,6 +69,15 @@ const WinnerBadge: React.FC<{ winner: string; delta?: string }> = ({ winner, del
   }
   if (winner === 'neutral') {
     return <span className="text-[#a1a1aa]">—</span>;
+  }
+  if (winner === 'bear1') {
+    return (
+      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-red-500/20 text-red-400 rounded-full text-sm font-semibold border border-red-500/30">
+        <XCircle size={16} />
+        <span>bear-1</span>
+        {delta && <span className="text-red-300 text-xs font-bold bg-red-500/30 px-1.5 py-0.5 rounded ml-1">{delta}</span>}
+      </div>
+    );
   }
   return <span className="text-[#a1a1aa]">bear-1</span>;
 };

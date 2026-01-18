@@ -1,6 +1,7 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import HeroSection from './components/HeroSection';
+import DemoSection from './components/DemoSection';
 import ComparisonTable from './components/ComparisonTable';
 import AccuracyPanel from './components/AccuracyPanel';
 import CompressionChart from './components/CompressionChart';
@@ -13,6 +14,7 @@ import LimitationsSection from './components/LimitationsSection';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -208,7 +210,8 @@ export default function App() {
       </div>
 
       <div className="relative z-10">
-        <HeroSection />
+        <HeroSection onTryDemo={() => setShowDemo(true)} />
+        {showDemo && <DemoSection />}
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16 lg:space-y-24">
           <div className="scroll-reveal">

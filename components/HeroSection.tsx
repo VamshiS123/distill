@@ -33,7 +33,11 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({ target, suffix = '', pr
   );
 };
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  onTryDemo: () => void;
+}
+
+export default function HeroSection({ onTryDemo }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden text-white pt-24 pb-32">
       <div className="relative max-w-7xl mx-auto px-4 text-center z-10">
@@ -63,7 +67,7 @@ export default function HeroSection() {
             icon="◎"
           />
           <HeroMetricCard 
-            value={2.4} 
+            value={6} 
             suffix="x" 
             label="LLM Throughput Boost" 
             icon="↗"
@@ -75,7 +79,19 @@ export default function HeroSection() {
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-          <button className="w-full sm:w-auto px-8 py-4 bg-white text-[#0a0a0a] rounded-xl font-bold shadow-lg shadow-black/20 hover:bg-gray-100 transform hover:-translate-y-0.5 transition flex items-center justify-center gap-2">
+          <button 
+            onClick={() => {
+              onTryDemo();
+              // Small delay to ensure component is rendered before scrolling
+              setTimeout(() => {
+                const element = document.getElementById('demo-section');
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 100);
+            }}
+            className="w-full sm:w-auto px-8 py-4 bg-white text-[#0a0a0a] rounded-xl font-bold shadow-lg shadow-black/20 hover:bg-gray-100 transform hover:-translate-y-0.5 transition flex items-center justify-center gap-2"
+          >
             <Play size={18} className="fill-current" />
             Try Demo
           </button>
