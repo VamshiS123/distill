@@ -3,7 +3,7 @@ from loguru import logger
 from typing import List
 
 from .loading import load_model_and_tokenizer, init_distill_config
-from .compression import compress_prompt_pipeline
+from .pipeline import compress_prompt_pipeline
 from .recovery import recover_response
 from .text_ops import get_token_length
 
