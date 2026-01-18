@@ -10,7 +10,7 @@ export default function ApproachSection() {
       <div className="p-10 border-b border-[#27272a] bg-white/5">
         <h2 className="text-3xl font-bold text-white mb-4">The Information-Theoretic Approach</h2>
         <p className="text-lg text-[#a1a1aa] max-w-4xl leading-relaxed">
-          While competitors like bear-1 focus on <em>importance</em> weighting (identifying which tokens "seem" useful to the model), Distill focuses on <strong>information density</strong>. We calculate the conditional entropy of every token given its context window, identifying redundant signals that carry zero net-new information.
+          While other approaches focus on <em>importance</em> weighting (identifying which tokens "seem" useful to the model), Distill focuses on <strong>information density</strong>. We calculate the conditional entropy of every token given its context window, identifying redundant signals that carry zero net-new information.
         </p>
       </div>
       
@@ -21,8 +21,8 @@ export default function ApproachSection() {
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
             <ArchBlock icon={<Code2 />} title="Input" sub="Raw Sequence" />
             <ArchArrow />
-            <ArchBlock icon={<Cpu />} title="Entropy Estimator" sub="12M Transformer" highlight />
-            <ArchArrow />
+            <ArchBlock icon={<Cpu />} title="Entropy Estimator" sub="7B Transformer" highlight />
+            <ArchLoop />
             <ArchBlock icon={<Zap />} title="Token Scorer" sub="H(t | Context)" />
             <ArchArrow />
             <ArchBlock icon={<Share2 />} title="Output" sub="Dense Prompt" success />
@@ -36,11 +36,11 @@ export default function ApproachSection() {
           />
           <InnovationCard 
             title="Contextual Persistence" 
-            desc="Unlike static pruning, Distill maintains 'Anchor Tokens'—low-probability, high-entropy tokens that serve as semantic pivots, ensuring the compressed prompt remains logically coherent for the target LLM."
+            desc="Unlike static pruning, Distill maintains 'Anchor Tokens', low-probability, high-entropy tokens that serve as semantic pivots, ensuring the compressed prompt remains logically coherent for the target LLM."
           />
           <InnovationCard 
-            title="Edge-Ready Model" 
-            desc="The Distill scoring engine is a ultra-lightweight 12M parameter transformer trained on millions of entropy patterns. It adds less than 50ms of overhead to the pre-fill stage."
+            title="Iterative Refinement Loop" 
+            desc="The Entropy Estimator and Token Scorer form a feedback loop that continuously refines the token selection. This iterative process keeps stripping redundant tokens until only Anchor Tokens, low-probability, high-entropy semantic pivots, remain, ensuring maximum compression while preserving logical coherence."
           />
         </div>
 
@@ -62,7 +62,7 @@ export default function ApproachSection() {
 `}
               <code className="text-gray-400"># 1. Initialize our high-speed entropy estimator</code>{`
 `}
-              <code className="text-white">model = EntropyModel.from_pretrained(</code><code className="text-orange-300">"distill-12m-v2"</code><code className="text-white">)</code>{`
+              <code className="text-white">model = EntropyModel.from_pretrained(</code><code className="text-orange-300">"distill-7b-v2"</code><code className="text-white">)</code>{`
 
 `}
               <code className="text-blue-300">def</code> <code className="text-green-300">distill_compress</code><code className="text-white">(input_ids, threshold=</code><code className="text-orange-300">0.9</code><code className="text-white">):</code>{`
@@ -109,6 +109,19 @@ const ArchArrow = () => (
   <div className="hidden md:block text-[#a1a1aa]">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </div>
+);
+
+const ArchLoop = () => (
+  <div className="hidden md:flex flex-col items-center justify-center gap-1">
+    {/* Arrow pointing right */}
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[#a1a1aa]">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+    {/* Arrow pointing left */}
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[#a1a1aa]">
+      <path d="M19 12H5M12 5l-7 7 7 7"/>
     </svg>
   </div>
 );

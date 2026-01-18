@@ -6,7 +6,7 @@ export const COMPARISON_DATA: MetricRow[] = [
   { metric: 'Accuracy Δ', bear1: '+1.1%', distill: '+1.3%', winner: 'distill', delta: '+0.2%' },
   { metric: 'P(better)', bear1: '100%', distill: '100%', winner: 'tie', delta: '' },
   { metric: 'Latency', bear1: '2.2s', distill: '1.8s', winner: 'distill', delta: '1.2x faster' },
-  { metric: 'Model Size', bear1: 'Unknown', distill: '12M params', winner: 'neutral', delta: '' },
+  { metric: 'Model Size', bear1: 'Unknown', distill: '7B params', winner: 'neutral', delta: '' },
 ];
 
 export const RESULTS_DATA: AccuracyResult[] = [

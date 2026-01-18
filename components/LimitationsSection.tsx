@@ -17,7 +17,7 @@ export default function LimitationsSection() {
         <ul className="space-y-4">
           <LimitItem text="Highly structured code or technical documentation requires higher entropy thresholds (θ < 0.5) to avoid pruning syntax characters." />
           <LimitItem text="Model is currently optimized for Llama-3 and GPT-4 tokenizer structures; performance may vary on models using SentencePiece." />
-          <LimitItem text="Multilingual support is currently limited to English, Spanish, and French base corpora." />
+          <LimitItem text="Stats found may lack statistical significance due to small n because of time constraints and rate limits." />
         </ul>
       </div>
 
@@ -31,7 +31,7 @@ export default function LimitationsSection() {
         </div>
         
         <ul className="space-y-4">
-          <LimitItem text="Development of Distill-Visual: Entropy-based image token pruning for multi-modal models." />
+          <LimitItem text="Development of specific integration that helps input structured code or technical documentation." />
           <LimitItem text="Real-time adaptive thresholding: Automatically adjusting θ during the generation stream to prioritize critical tokens." />
           <LimitItem text="Direct KV-cache compression integration for sub-linear memory scaling." />
         </ul>

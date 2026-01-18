@@ -74,15 +74,15 @@ export default function MethodologySection() {
             <ul className="space-y-3 text-xs text-[#a1a1aa]">
               <li className="flex justify-between border-b border-[#27272a] pb-2">
                 <span>Inference Engine</span>
-                <span className="font-mono text-white">vLLM v0.4.0</span>
+                <span className="font-mono text-white">Bert-base-multilingual-cased</span>
               </li>
               <li className="flex justify-between border-b border-[#27272a] pb-2">
                 <span>Tokenizer</span>
-                <span className="font-mono text-white">tiktoken (o200k_base)</span>
+                <span className="font-mono text-white">tiktoken (o100k_base)</span>
               </li>
               <li className="flex justify-between border-b border-[#27272a] pb-2">
                 <span>Compute Platform</span>
-                <span className="font-mono text-white">8x H100 (SXM5)</span>
+                <span className="font-mono text-white">apple silicon (M3)</span>
               </li>
               <li className="flex justify-between border-b border-[#27272a] pb-2">
                 <span>Quantization</span>
