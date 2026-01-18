@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Maximize, Search } from 'lucide-react';
+import { Maximize, Search, Database, ArrowRight } from 'lucide-react';
 
 export default function ContextSection() {
   return (
@@ -37,9 +37,20 @@ export default function ContextSection() {
 
         {/* Needle in Haystack Table */}
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl shadow-sm border border-[#27272a] p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Search className="text-blue-400" size={24} />
-            <h3 className="text-xl font-bold text-white">Needle-in-Haystack Retrieval</h3>
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Search className="text-blue-400" size={24} />
+              <h3 className="text-xl font-bold text-white">Needle-in-Haystack Retrieval</h3>
+            </div>
+            <a 
+              href="https://docs.google.com/spreadsheets/d/1eS3BQRKUyH7s3kLvmFrSuLLyez2Me99J3jL-jBZwUFU/edit?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-blue-500/20 text-blue-400 p-2 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-500/50 transition-all cursor-pointer flex items-center gap-1.5 group"
+            >
+              <Database size={18} />
+              <ArrowRight size={14} className="opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+            </a>
           </div>
           
           <div className="overflow-hidden border border-[#27272a] rounded-xl">
@@ -60,7 +71,7 @@ export default function ContextSection() {
             </table>
           </div>
           <p className="mt-4 text-[10px] text-[#a1a1aa] font-medium text-center">
-            Retrieval accuracy (%) tested across 1,000 document permutations at 100K context length.
+            Retrieval accuracy (%) tested across 50 document permutations at 100K context length.
           </p>
         </div>
       </div>
