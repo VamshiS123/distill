@@ -1,6 +1,6 @@
 import json
 
-from distill.distill import PromptCompressor
+from distill import Distill
 
 prompt = [
     """
@@ -34,11 +34,10 @@ Finally, there is a strict budget constraint regarding labor costs. Team Alpha m
     """
 ]
 
-llm_lingua = PromptCompressor(
+compressor = Distill(
     model_name="./models",
-    use_llmlingua2=True,  # Whether to use llmlingua-2
     device_map="mps"
 )
-compressed_prompt = llm_lingua.compress_prompt(prompt, rate=0.33, force_tokens=['\n', '?'])
+compressed_prompt = compressor.compress_prompt(prompt, force_tokens=['\n', '?'])
 
 print(json.dumps(compressed_prompt, indent=2))
