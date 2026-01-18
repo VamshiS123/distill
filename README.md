@@ -1,2 +1,156 @@
-# Distill
-LLM Prompt Compression Library
+# Distill: Radical Efficiency for the AI Era
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
+[![NexHacks](https://img.shields.io/badge/Hackathon-NexHacks%202026-orange)](https://nexhacks.com)
+
+**Distill** is a high-performance LLM input compression library built for the **NexHacks (CMU)** sponsor track by **The Token Company**. It implements a novel token-classification-based compression algorithm that removes the "least significant" tokens from prompts, enabling massive context window scaling, reduced latency, and lower inference costs.
+
+---
+
+## The Vision
+
+As compute costs continue to scale, the AI industry is hitting a wall where high-level inference becomes an expensive luxury. **The Token Company** believes the path forward isn’t just more hardware, but radical efficiency through compression.
+
+Just as JPEGs revolutionized images and MP3s transformed audio, **Distill** brings lossy yet intelligent compression to LLM inputs. By distilling prompts down to their most significant tokens, we bypass the hardware bottleneck and make massive context windows scalable for everyone.
+
+---
+
+## How It Works
+
+Distill employs a specialized Transformer-based classification model to evaluate the information density of every token in a prompt.
+
+1.  **Importance Scoring**: A local SLM (e.g., `bert-base-multilingual-cased`) performs a single forward pass over the input text, assigning an "importance probability" to each token.
+2.  **Strategic Pruning**: Tokens are filtered based on a percentile threshold. Users can specify a target `reduce_rate` (e.g., 0.5 for 50% compression).
+3.  **Constraint Preservation**: Critical tokens (newlines, question marks, or user-defined keywords) can be "forced" to remain, ensuring the structural integrity and intent of the prompt are preserved.
+4.  **Word-Level Aggregation**: Probabilities are merged from sub-tokens to words, preventing the removal of partial words that might confuse the target LLM.
+5.  **Token-Aware Budgeting**: Uses `tiktoken` to ensure the final output fits exactly within the target token budget for models like GPT-4o-mini.
+
+---
+
+## Benchmarks (LongBench V2)
+
+Tested on the **LongBench V2** benchmark using `gpt-4o-mini` as the target LLM.
+
+| Metric | Baseline | **Distill (Ours)** | Improvement          |
+| :--- | :--- |:-------------------|:---------------------|
+| **Accuracy** | 30.67% | 29.34%             | -1.3% (Minimal drop) |
+| **Avg Tokens** | 46,043 | **22,034**         | **-52.1%**           |
+| **Inference Time** | 12.06s | **2.11s**          | **-82.5%**           |
+| **Total Latency** | 12.06s | **7.60s**          | **-37.0%**           |
+| **Input Cost** | $0.0069 | **$0.0033**        | **-52.1%**           |
+
+*Note: While total latency includes the compression overhead (approx 5.5s), the massive reduction in LLM generation time and cost makes Distill ideal for high-throughput or context-heavy applications.*
+
+---
+
+## 📦 Installation
+
+### Prerequisites
+- Python 3.14+
+- PyTorch (with MPS/CUDA support)
+- `uv` (recommended) or `pip`
+
+### Setup
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/distill.git
+   cd distill
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   uv sync
+   ```
+
+3. **Environment Variables**:
+   Create a `.env` file in the root directory:
+   ```env
+   TTC_API_KEY=your_token_company_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
+   DISTILL_MODEL_PATH=./models
+   DISTILL_DEVICE=mps
+   ```
+
+4. **Download the Model**:
+   Place your compression model weights (e.g., `model.safetensors`, `config.json`) in the `models/` directory.
+
+---
+
+## 💻 Usage
+
+### Python API
+
+```python
+from distill import Distill
+
+# Initialize the compressor
+compressor = Distill(
+    model_name="./models",
+    device_map="mps"  # Use "cuda" for NVIDIA GPUs or "cpu"
+)
+
+prompt = ["Your very long prompt goes here..."]
+
+# Compress by 50% while preserving questions and newlines
+compressed = compressor.compress_prompt(
+    prompt, 
+    rate=0.5, 
+    force_tokens=['\n', '?']
+)
+
+print(f"Compressed Text: {compressed[0]}")
+```
+
+### Running the API Server
+
+Distill comes with a built-in FastAPI server for remote compression.
+
+```bash
+# Start the server
+uv run fastapi run distill/api.py --port 8000
+```
+
+**Endpoint**: `POST /compress_prompt`
+**Payload**:
+```json
+{
+  "context": ["Your long prompt..."],
+  "rate": 0.5,
+  "force_tokens": ["\n"]
+}
+```
+
+---
+
+## 📂 Project Structure
+
+```text
+├── distill/
+│   ├── core_compression.py  # Core pruning logic
+│   ├── distill.py           # Main library entry point
+│   ├── pipeline.py          # Orchestration pipeline
+│   ├── inference.py         # Model forward pass utilities
+│   ├── api.py               # FastAPI implementation
+│   └── ...
+├── models/                  # Local model weights
+├── main.py                  # Demo script
+├── benchmark.py             # Evaluation script
+└── pyproject.toml           # Dependencies
+```
+
+---
+
+## 🏆 NexHacks & The Token Company
+
+This project was developed for the **NexHacks** hackathon at **Carnegie Mellon University**, specifically for the **The Token Company** sponsor track.
+
+**The Token Company (YC W26)** is the first commercial lab building proprietary machine learning models for compressing LLM input. This repository serves as a submission for the **Alternative Compression Model** category.
+
+Learn more at [thetokencompany.com](https://thetokencompany.com).
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
