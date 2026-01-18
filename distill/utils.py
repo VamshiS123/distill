@@ -1,5 +1,8 @@
 import os
 import random
+import re
+from collections import defaultdict
+from typing import List
 
 import numpy as np
 import torch
@@ -84,3 +87,102 @@ def replace_added_token(token, token_map):
 
 def get_pure_token(token, model_name):
     return token.lstrip("##")
+
+
+def get_token_length(
+        text: str,
+        tokenizer,
+        oai_tokenizer=None,
+        add_special_tokens: bool = True,
+        use_oai_tokenizer: bool = False,
+):
+    if use_oai_tokenizer and oai_tokenizer is not None:
+        return len(oai_tokenizer.encode(text))
+    else:
+        return len(
+            tokenizer(text, add_special_tokens=add_special_tokens).input_ids
+        )
+
+
+def chunk_context(origin_text, chunk_end_tokens, tokenizer, max_seq_len):
+    # logger.trace("Chunking context...")
+    # leave 2 token for CLS and SEP
+    max_len = max_seq_len - 2
+    origin_list = []
+    origin_tokens = tokenizer.tokenize(origin_text)
+    n = len(origin_tokens)
+    st = 0
+    while st < n:
+        if st + max_len > n - 1:
+            chunk = tokenizer.convert_tokens_to_string(origin_tokens[st:n])
+            origin_list.append(chunk)
+            break
+        else:
+            ed = st + max_len
+            for j in range(0, ed - st):
+                if origin_tokens[ed - j] in chunk_end_tokens:
+                    ed = ed - j
+                    break
+            chunk = tokenizer.convert_tokens_to_string(
+                origin_tokens[st: ed + 1]
+            )
+            origin_list.append(chunk)
+            st = ed + 1
+    return origin_list
+
+
+def merge_token_to_word(
+        tokens,
+        token_probs,
+        force_tokens,
+        token_map,
+        force_reserve_digit,
+        special_tokens,
+        model_name,
+):
+    words = []
+    word_probs = []
+    word_probs_no_force = []
+
+    for token, prob in zip(tokens, token_probs):
+        if token in special_tokens:
+            continue
+        # add a new word
+        elif is_begin_of_new_word(token, model_name, force_tokens, token_map):
+            pure_token = get_pure_token(token, model_name)
+            prob_no_force = prob
+            if pure_token in force_tokens or pure_token in set(token_map.values()):
+                prob = 1.0
+            token = replace_added_token(token, token_map)
+            words.append(token)
+            word_probs.append(
+                [
+                    1.0
+                    if force_reserve_digit and bool(re.search(r"\d", token))
+                    else prob
+                ]
+            )
+            word_probs_no_force.append([prob_no_force])
+        # concatenate with previous token
+        else:
+            pure_token = get_pure_token(token, model_name)
+            words[-1] += pure_token
+            word_probs[-1].append(
+                1.0
+                if force_reserve_digit and bool(re.search(r"\d", token))
+                else prob
+            )
+            word_probs_no_force[-1].append(prob_no_force)
+
+    return words, word_probs, word_probs_no_force
+
+
+def token_prob_to_word_prob(token_probs, convert_mode="mean"):
+    if convert_mode == "mean":
+        word_probs = [sum(p) / len(p) for p in token_probs]
+    elif convert_mode == "first":
+        word_probs = [p[0] for p in token_probs]
+    else:
+        raise NotImplementedError()
+
+    return word_probs
