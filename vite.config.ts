@@ -7,5 +7,8 @@ export default defineConfig({
   server: {
     port: 8000,
     open: true
+  },
+  optimizeDeps: {
+    include: ['react-syntax-highlighter', 'react-syntax-highlighter/dist/esm/styles/prism']
   }
 })
