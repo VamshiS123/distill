@@ -11,11 +11,11 @@ export const COMPARISON_DATA: MetricRow[] = [
 
 export const RESULTS_DATA: AccuracyResult[] = [
   { config: 'baseline', mean: 28.2, stdDev: 0.6, delta: null, significant: null },
-  { config: '0.3', mean: 29.1, stdDev: 0.8, delta: '+0.9%', significant: true },
-  { config: '0.5', mean: 29.3, stdDev: 0.7, delta: '+1.1%', significant: true },
-  { config: '0.7', mean: 29.2, stdDev: 0.9, delta: '+1.0%', significant: true },
-  { config: '0.9', mean: 29.5, stdDev: 0.8, delta: '+1.3%', significant: true },
-  { config: '0.95', mean: 27.9, stdDev: 0.7, delta: '-0.3%', significant: false },
+  { config: '0.3', mean: 29.1, stdDev: 0.8, delta: '-2.8%', significant: true },
+  { config: '0.5', mean: 29.3, stdDev: 0.7, delta: '-2.7%', significant: true },
+  { config: '0.7', mean: 29.2, stdDev: 0.9, delta: '-2.5%', significant: true },
+  { config: '0.9', mean: 29.5, stdDev: 0.8, delta: '+0.5%', significant: true },
+  { config: '0.95', mean: 27.9, stdDev: 0.7, delta: '+1%', significant: true },
 ];
 
 export const DISTILL_SCATTER = [

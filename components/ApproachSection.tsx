@@ -49,43 +49,248 @@ export default function ApproachSection() {
           className="w-full py-4 bg-white/10 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-white/15 transition shadow-lg border border-[#27272a]"
         >
           {showCode ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          {showCode ? 'Close Technical Implementation' : 'View Code Implementation (PyTorch)'}
+          {showCode ? 'Close Technical Implementation' : 'View Code Implementation'}
         </button>
 
         {showCode && (
           <div className="mt-6 bg-[#0D1117] rounded-2xl p-8 overflow-x-auto border border-[#27272a] animate-fade-in shadow-2xl">
-            <pre className="text-[13px] leading-relaxed">
-              <code className="text-blue-300">import</code> <code className="text-white">torch</code>{`
-`}
-              <code className="text-blue-300">from</code> <code className="text-white">distill.core</code> <code className="text-blue-300">import</code> <code className="text-white">EntropyModel, Pruner</code>{`
+            <pre className="text-[13px] leading-relaxed text-blue-100">
+              {`import numpy as np
+import copy
+import logging
+from typing import List
 
-`}
-              <code className="text-gray-400"># 1. Initialize our high-speed entropy estimator</code>{`
-`}
-              <code className="text-white">model = EntropyModel.from_pretrained(</code><code className="text-orange-300">"distill-7b-v2"</code><code className="text-white">)</code>{`
+logger = logging.getLogger(__name__)
 
-`}
-              <code className="text-blue-300">def</code> <code className="text-green-300">distill_compress</code><code className="text-white">(input_ids, threshold=</code><code className="text-orange-300">0.9</code><code className="text-white">):</code>{`
-    `}
-              <code className="text-gray-400"># 2. Estimate conditional entropy H(x_i | x_prev)</code>{`
-    `}
-              <code className="text-white">logits = model(input_ids).logits
-    probs = torch.softmax(logits, dim=-1)
-    entropies = -torch.sum(probs * torch.log(probs + </code><code className="text-orange-300">1e-9</code><code className="text-white">), dim=-</code><code className="text-orange-300">1</code><code className="text-white">)
+def compress_prompt(
+    self,
+    context: List[str],
+    rate: float = 0.5,
+    target_token: int = -1,
+    use_context_level_filter: bool = False,
+    use_token_level_filter: bool = True,
+    target_context: int = -1,
+    context_level_rate: float = 1.0,
+    context_level_target_token: int = -1,
+    force_context_ids: List[int] = [],
+    return_word_label: bool = False,
+    word_sep: str = "\\t\\t|\\t\\t",
+    label_sep: str = " ",
+    token_to_word: str = "mean",
+    force_tokens: List[str] = [],
+    force_reserve_digit: bool = False,
+    drop_consecutive: bool = False,
+    chunk_end_tokens: List[str] = [".", "\\n"],
+):
+    logger.info(
+        f"Compressing prompt. Context chunks: {len(context) if isinstance(context, list) else 1}, Rate: {rate}, Target Token: {target_token}")
+    assert len(force_tokens) <= self.max_force_token
+    token_map = {}
+    for i, t in enumerate(force_tokens):
+        if len(self.tokenizer.tokenize(t)) != 1:
+            token_map[t] = self.added_tokens[i]
+    chunk_end_tokens = copy.deepcopy(chunk_end_tokens)
+    for c in chunk_end_tokens:
+        if c in token_map:
+            chunk_end_tokens.append(token_map[c])
+    chunk_end_tokens = set(chunk_end_tokens)
 
-    </code><code className="text-gray-400"># 3. Apply adaptive pruning based on information density</code>{`
-    `}
-              <code className="text-white">keep_mask = Pruner.entropy_threshold(entropies, threshold)
-    
-    </code><code className="text-blue-300">return</code> <code className="text-white">input_ids[keep_mask]</code>{`
+    if type(context) == str:
+        context = [context]
+    context = copy.deepcopy(context)
 
-`}
-              <code className="text-gray-400"># Usage on 100K token document</code>{`
-`}
-              <code className="text-white">compressed_ids = distill_compress(doc_tokens, threshold=</code><code className="text-orange-300">0.9</code><code className="text-white">)</code>{`
-`}
-              <code className="text-blue-300">print</code><code className="text-white">(</code><code className="text-orange-300">f"Compressed by </code><code className="text-white">{`{len(doc_tokens) / len(compressed_ids):.2f}`}</code><code className="text-orange-300">x"</code><code className="text-white">)</code>
-            </pre>
+    if len(context) == 1 and use_context_level_filter:
+        use_context_level_filter = False
+        logger.debug("Context level filter disabled because context length is 1.")
+
+    n_original_token = 0
+    context_chunked = []
+    for i in range(len(context)):
+        n_original_token += self.get_token_length(
+            context[i], use_oai_tokenizer=True
+        )
+        for ori_token, new_token in token_map.items():
+            context[i] = context[i].replace(ori_token, new_token)
+        context_chunked.append(
+            self.__chunk_context(context[i], chunk_end_tokens=chunk_end_tokens)
+        )
+
+    logger.info(f"Original token count: {n_original_token}")
+
+    if use_context_level_filter:
+        logger.debug("Applying context level filter.")
+        if (
+                target_context <= 0
+                and context_level_rate >= 1.0
+                and context_level_target_token <= 0
+        ):
+            if target_token < 0 and rate < 1.0:
+                context_level_rate = (
+                    (rate + 1.0) / 2 if use_token_level_filter else rate
+                )
+            if target_token >= 0:
+                context_level_target_token = (
+                    target_token * 2 if use_token_level_filter else target_token
+                )
+
+        if target_context >= 0:
+            context_level_rate = min(target_context / len(context), 1.0)
+        if context_level_target_token >= 0:
+            context_level_rate = min(
+                context_level_target_token / n_original_token, 1.0
+            )
+
+        logger.debug(f"Calculating context probabilities. context_level_rate={context_level_rate}")
+        context_probs, context_words = self.__get_context_prob(
+            context_chunked,
+            token_to_word=token_to_word,
+            force_tokens=force_tokens,
+            token_map=token_map,
+            force_reserve_digit=force_reserve_digit,
+        )
+
+        threshold = np.percentile(
+            context_probs, int(100 * (1 - context_level_rate))
+        )
+        logger.debug(f"Context probability threshold: {threshold}")
+
+        reserved_context = []
+        context_label = [False] * len(context_probs)
+        for i, p in enumerate(context_probs):
+            if p >= threshold or (
+                    force_context_ids is not None and i in force_context_ids
+            ):
+                reserved_context.append(context_chunked[i])
+                context_label[i] = True
+
+        n_reserved_token = 0
+        for chunks in reserved_context:
+            for c in chunks:
+                n_reserved_token += self.get_token_length(c, use_oai_tokenizer=True)
+
+        logger.info(f"Tokens after context filtering: {n_reserved_token}")
+
+        if target_token >= 0:
+            rate = min(target_token / n_reserved_token, 1.0)
+
+        if use_token_level_filter:
+            logger.debug("Applying token level filter (with context filter).")
+            compressed_context, word_list, word_label_list = self.__compress(
+                reserved_context,
+                reduce_rate=max(0, 1 - rate),
+                token_to_word=token_to_word,
+                force_tokens=force_tokens,
+                token_map=token_map,
+                force_reserve_digit=force_reserve_digit,
+                drop_consecutive=drop_consecutive,
+            )
+        else:
+            logger.debug("Skipping token level filter (with context filter).")
+            compressed_context, word_list, word_label_list = self.__compress(
+                reserved_context,
+                reduce_rate=0,
+                token_to_word=token_to_word,
+                force_tokens=force_tokens,
+                token_map=token_map,
+                force_reserve_digit=force_reserve_digit,
+                drop_consecutive=drop_consecutive,
+            )
+
+        n_compressed_token = 0
+        for c in compressed_context:
+            n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
+
+        logger.info(f"Compressed token count: {n_compressed_token}")
+
+        ratio = (
+            1 if n_compressed_token == 0 else n_original_token / n_compressed_token
+        )
+        res = {
+            "compressed_prompt": "\\n\\n".join(compressed_context),
+            "compressed_prompt_list": compressed_context,
+            "origin_tokens": n_original_token,
+            "compressed_tokens": n_compressed_token,
+            "ratio": f"{ratio:.1f}x",
+            "rate": f"{1 / ratio * 100:.1f}%",
+            "saving": f", Saving \\\${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
+        }
+        if return_word_label:
+            words = []
+            labels = []
+            j = 0
+            for i in range(len(context)):
+                if context_label[i]:
+                    words.extend(word_list[j])
+                    labels.extend(word_label_list[j])
+                    j += 1
+                else:
+                    words.extend(context_words[i])
+                    labels.extend([0] * len(context_words[i]))
+            word_label_lines = word_sep.join(
+                [f"{word}{label_sep}{label}" for word, label in zip(words, labels)]
+            )
+            res["fn_labeled_original_prompt"] = word_label_lines
+        return res
+
+    # Normal path without context level filter
+    if target_token > 0:
+        rate = min(target_token / n_original_token, 1.0)
+
+    logger.debug(f"Effective compression rate: {rate}")
+
+    if use_token_level_filter:
+        logger.debug("Applying token level filter.")
+        compressed_context, word_list, word_label_list = self.__compress(
+            context_chunked,
+            reduce_rate=max(0, 1 - rate),
+            token_to_word=token_to_word,
+            force_tokens=force_tokens,
+            token_map=token_map,
+            force_reserve_digit=force_reserve_digit,
+            drop_consecutive=drop_consecutive,
+        )
+    else:
+        logger.debug("Skipping token level filter.")
+        compressed_context, word_list, word_label_list = self.__compress(
+            context_chunked,
+            reduce_rate=0,
+            token_to_word=token_to_word,
+            force_tokens=force_tokens,
+            token_map=token_map,
+            force_reserve_digit=force_reserve_digit,
+            drop_consecutive=drop_consecutive,
+        )
+
+    n_compressed_token = 0
+    for c in compressed_context:
+        n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
+
+    logger.info(f"Compressed token count: {n_compressed_token}")
+
+    ratio = (
+        1 if n_compressed_token == 0 else n_original_token / n_compressed_token
+    )
+    res = {
+        "compressed_prompt": "\\n\\n".join(compressed_context),
+        "compressed_prompt_list": compressed_context,
+        "origin_tokens": n_original_token,
+        "compressed_tokens": n_compressed_token,
+        "ratio": f"{ratio:.1f}x",
+        "rate": f"{1 / ratio * 100:.1f}%",
+        "saving": f", Saving \\\${(n_original_token - n_compressed_token) * 0.06 / 1000:.1f} in GPT-4.",
+    }
+    if return_word_label:
+        words = []
+        labels = []
+        for w_list, l_list in zip(word_list, word_label_list):
+            words.extend(w_list)
+            labels.extend(l_list)
+
+        word_label_lines = word_sep.join(
+            [f"{word}{label_sep}{label}" for word, label in zip(words, labels)]
+        )
+        res["fn_labeled_original_prompt"] = word_label_lines
+    return res`}
           </div>
         )}
       </div>
