@@ -46,7 +46,8 @@ class Distill:
             max_batch_size: int = 50,
             max_force_token: int = 100,
     ):
-        logger.debug(f"Initializing Distill internal config: max_batch_size={max_batch_size}, max_force_token={max_force_token}")
+        logger.debug(
+            f"Initializing Distill internal config: max_batch_size={max_batch_size}, max_force_token={max_force_token}")
         seed_everything(42)
         self.max_batch_size = max_batch_size
         self.max_seq_len = 512
@@ -76,7 +77,7 @@ class Distill:
         trust_remote_code = model_config.get("trust_remote_code", True)
         if "trust_remote_code" not in model_config:
             model_config["trust_remote_code"] = trust_remote_code
-        
+
         logger.debug("Loading AutoConfig...")
         config = AutoConfig.from_pretrained(model_name, **model_config)
         logger.debug("Loading AutoTokenizer...")
@@ -86,7 +87,7 @@ class Distill:
             tokenizer.pad_token_id = (
                 config.pad_token_id if config.pad_token_id else tokenizer.eos_token_id
             )
-        
+
         MODEL_CLASS = (
             AutoModelForTokenClassification
             if any("ForTokenClassification" in ar for ar in config.architectures)
@@ -148,7 +149,8 @@ class Distill:
             drop_consecutive: bool = False,
             chunk_end_tokens: List[str] = [".", "\n"],
     ):
-        logger.info(f"Compressing prompt. Context chunks: {len(context) if isinstance(context, list) else 1}, Rate: {rate}, Target Token: {target_token}")
+        logger.info(
+            f"Compressing prompt. Context chunks: {len(context) if isinstance(context, list) else 1}, Rate: {rate}, Target Token: {target_token}")
         assert len(force_tokens) <= self.max_force_token
         token_map = {}
         for i, t in enumerate(force_tokens):
@@ -179,7 +181,7 @@ class Distill:
             context_chunked.append(
                 self.__chunk_context(context[i], chunk_end_tokens=chunk_end_tokens)
             )
-        
+
         logger.info(f"Original token count: {n_original_token}")
 
         if use_context_level_filter:
@@ -206,7 +208,7 @@ class Distill:
                 context_level_rate = min(
                     context_level_target_token / n_original_token, 1.0
                 )
-            
+
             logger.debug(f"Calculating context probabilities. context_level_rate={context_level_rate}")
             context_probs, context_words = self.__get_context_prob(
                 context_chunked,
@@ -229,12 +231,12 @@ class Distill:
                 ):
                     reserved_context.append(context_chunked[i])
                     context_label[i] = True
-            
+
             n_reserved_token = 0
             for chunks in reserved_context:
                 for c in chunks:
                     n_reserved_token += self.get_token_length(c, use_oai_tokenizer=True)
-            
+
             logger.info(f"Tokens after context filtering: {n_reserved_token}")
 
             if target_token >= 0:
@@ -266,9 +268,9 @@ class Distill:
             n_compressed_token = 0
             for c in compressed_context:
                 n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
-            
+
             logger.info(f"Compressed token count: {n_compressed_token}")
-            
+
             ratio = (
                 1 if n_compressed_token == 0 else n_original_token / n_compressed_token
             )
@@ -302,7 +304,7 @@ class Distill:
         # Normal path without context level filter
         if target_token > 0:
             rate = min(target_token / n_original_token, 1.0)
-        
+
         logger.debug(f"Effective compression rate: {rate}")
 
         if use_token_level_filter:
@@ -331,9 +333,9 @@ class Distill:
         n_compressed_token = 0
         for c in compressed_context:
             n_compressed_token += self.get_token_length(c, use_oai_tokenizer=True)
-        
+
         logger.info(f"Compressed token count: {n_compressed_token}")
-        
+
         ratio = (
             1 if n_compressed_token == 0 else n_original_token / n_compressed_token
         )
@@ -379,6 +381,7 @@ class Distill:
             response: str,
     ):
         logger.info("Recovering response...")
+
         def match_from_compressed(response_word):
             response_input_ids = self.tokenizer(
                 response_word, add_special_tokens=False
@@ -607,6 +610,7 @@ class Distill:
             drop_consecutive: bool = False,
     ):
         logger.debug(f"Executing __compress with reduce_rate={reduce_rate}, drop_consecutive={drop_consecutive}")
+
         def split_string_to_words(input_string):
             pattern = r'\b\w+\b|[<>=/!@#$%^&*()?":{}|\\`~;_+-]'
             result = re.findall(pattern, input_string)
