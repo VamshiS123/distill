@@ -42,7 +42,7 @@ export default function ComparisonTable() {
         
         <div className="px-8 py-4 bg-white/5 border-t border-[#27272a] flex items-center gap-2 text-sm text-[#a1a1aa]">
           <Info size={14} className="text-[#a1a1aa]" />
-          Both models were evaluated on the LongBench v2 dataset (230 samples, 50 independent runs each) to ensure statistical significance.
+          Both models were evaluated on the LongBench v2 dataset (230 samples, 100 independent runs each) to ensure statistical significance.
         </div>
       </div>
     </section>

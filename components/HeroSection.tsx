@@ -50,7 +50,7 @@ export default function HeroSection() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-14">
           <HeroMetricCard 
-            value={68.2} 
+            value={64} 
             suffix="%" 
             label="Token Reduction" 
             icon="⬇"
@@ -58,14 +58,14 @@ export default function HeroSection() {
           <HeroMetricCard 
             value={1.3} 
             suffix="%" 
-            prefix="+" 
-            label="Accuracy Gain" 
+            prefix="-" 
+            label="Accuracy Loss" 
             icon="◎"
           />
           <HeroMetricCard 
             value={2.4} 
             suffix="x" 
-            label="Inference Boost" 
+            label="LLM Throughput Boost" 
             icon="↗"
           />
         </div>

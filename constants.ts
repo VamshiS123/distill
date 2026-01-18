@@ -2,11 +2,11 @@
 import { MetricRow, AccuracyResult, LatencyDataPoint } from './types';
 
 export const COMPARISON_DATA: MetricRow[] = [
-  { metric: 'Token Reduction', bear1: '66.1%', distill: '68.2%', winner: 'distill', delta: '+2.1%' },
-  { metric: 'Accuracy Δ', bear1: '+1.1%', distill: '+1.3%', winner: 'distill', delta: '+0.2%' },
+  { metric: 'Token Reduction', bear1: '66.1%', distill: '68%', winner: 'distill', delta: '+1.9%' },
+  { metric: 'Accuracy Δ', bear1: '+1.1%', distill: '-1.2%', winner: 'bear1', delta: '-2.3%' },
   { metric: 'P(better)', bear1: '100%', distill: '100%', winner: 'tie', delta: '' },
-  { metric: 'Latency', bear1: '2.2s', distill: '1.8s', winner: 'distill', delta: '1.2x faster' },
-  { metric: 'Model Size', bear1: 'Unknown', distill: '12M params', winner: 'neutral', delta: '' },
+  { metric: 'Inference Time', bear1: '2.32s', distill: '2.11s', winner: 'distill', delta: '1.1x faster' },
+  { metric: 'Model Size', bear1: 'Unknown', distill: '3b params', winner: 'neutral', delta: '' },
 ];
 
 export const RESULTS_DATA: AccuracyResult[] = [
