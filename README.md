@@ -2,15 +2,14 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
-[![NexHacks](https://img.shields.io/badge/Hackathon-NexHacks%202026-orange)](https://nexhacks.com)
 
-**Distill** is a high-performance LLM input compression library built for the **NexHacks (CMU)** sponsor track by **The Token Company**. It implements a novel token-classification-based compression algorithm that removes the "least significant" tokens from prompts, enabling massive context window scaling, reduced latency, and lower inference costs.
+**Distill** is a high-performance LLM input compression library. It implements a novel token-classification-based compression algorithm that removes the "least significant" tokens from prompts, enabling massive context window scaling, reduced latency, and lower inference costs.
 
 ---
 
 ## The Vision
 
-As compute costs continue to scale, the AI industry is hitting a wall where high-level inference becomes an expensive luxury. **The Token Company** believes the path forward isn’t just more hardware, but radical efficiency through compression.
+As compute costs continue to scale, the AI industry is hitting a wall where high-level inference becomes an expensive luxury. Radical efficiency through compression is the path forward, rather than just more hardware.
 
 Just as JPEGs revolutionized images and MP3s transformed audio, **Distill** brings lossy yet intelligent compression to LLM inputs. By distilling prompts down to their most significant tokens, we bypass the hardware bottleneck and make massive context windows scalable for everyone.
 
@@ -81,7 +80,6 @@ Tested on the **LongBench V2** benchmark using `gpt-4o-mini` as the target LLM.
 3. **Environment Variables**:
    Create a `.env` file in the root directory:
    ```env
-   TTC_API_KEY=your_token_company_api_key_here
    OPENAI_API_KEY=your_openai_api_key_here
    DISTILL_MODEL_PATH=./models
    DISTILL_DEVICE=mps
@@ -153,16 +151,6 @@ uv run fastapi run distill/api.py --port 8000
 ├── benchmark.py             # Evaluation script
 └── pyproject.toml           # Dependencies
 ```
-
----
-
-## 🏆 NexHacks & The Token Company
-
-This project was developed for the **NexHacks** hackathon at **Carnegie Mellon University**, specifically for the **The Token Company** sponsor track.
-
-**The Token Company (YC W26)** is the first commercial lab building proprietary machine learning models for compressing LLM input. This repository serves as a submission for the **Alternative Compression Model** category.
-
-Learn more at [thetokencompany.com](https://thetokencompany.com).
 
 ---
 
