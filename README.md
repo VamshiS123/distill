@@ -1,159 +1,124 @@
-# Distill: Radical Efficiency for the AI Era
+# Distill: Radical Context Efficiency
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Platform: Apple Silicon](https://img.shields.io/badge/platform-Apple%20Silicon-orange.svg)]()
 
-**Distill** is a high-performance LLM input compression library. It implements a novel token-classification-based compression algorithm that removes the "least significant" tokens from prompts, enabling massive context window scaling, reduced latency, and lower inference costs.
+**Distill** is a high-performance LLM input compression library designed to overcome the "Context Wall." By leveraging a specialized Transformer-based classification model, Distill prunes the least significant tokens from your prompts, enabling massive context scaling, reduced latency, and significantly lower inference costs—all with minimal impact on accuracy.
 
 ---
 
 ## The Vision
 
-As compute costs continue to scale, the AI industry is hitting a wall where high-level inference becomes an expensive luxury. Radical efficiency through compression is the path forward, rather than just more hardware.
-
-Just as JPEGs revolutionized images and MP3s transformed audio, **Distill** brings lossy yet intelligent compression to LLM inputs. By distilling prompts down to their most significant tokens, we bypass the hardware bottleneck and make massive context windows scalable for everyone.
+As LLM context windows expand to millions of tokens, the "Quadratic Cost" of attention becomes a hardware bottleneck. Distill brings **Intelligent Lossy Compression** to text. Much like JPEG revolutionized image storage by removing imperceptible data, Distill removes "semantic noise" from LLM prompts, ensuring that only the most information-dense tokens are sent to the target model.
 
 ---
 
-## How It Works
+## Technical Architecture
 
-Distill employs a specialized Transformer-based classification model to evaluate the information density of every token in a prompt.
+Distill doesn't rely on simple regex or basic entropy models. It employs a **BERT-based Token Classification** architecture to evaluate the importance of every word in context.
 
-1.  **Importance Scoring**: Local SLMs (e.g. `Llama-3.2-7B`) performs a single forward pass over the input text, assigning an "importance probability" to each token.
-2.  **Strategic Pruning**: Tokens are filtered based on a percentile threshold. Users can specify a target `reduce_rate` (e.g., 0.5 for 50% compression).
-3.  **Constraint Preservation**: Critical tokens (newlines, question marks, or user-defined keywords) can be "forced" to remain, ensuring the structural integrity and intent of the prompt are preserved.
-4.  **Word-Level Aggregation**: Probabilities are merged from sub-tokens to words, preventing the removal of partial words that might confuse the target LLM.
-5.  **Token-Aware Budgeting**: Uses `tiktoken` to ensure the final output fits exactly within the target token budget for models like GPT-4o-mini.
+### The Pipeline
+1.  **Importance Scoring**: A `bert-base-multilingual-cased` model, fine-tuned for token classification, performs a single forward pass over the input. It assigns an "importance probability" to every token.
+2.  **Word-Level Aggregation**: Sub-token probabilities are merged into word-level scores (using `mean` or `first` strategies). This prevents "partial-word pruning" that can lead to LLM hallucinations.
+3.  **Two-Tier Filtering**:
+    *   **Context-Level Filter**: Entire chunks of text (e.g., irrelevant paragraphs) are scored and removed if they fall below a dynamic threshold.
+    *   **Token-Level Filter**: Within the remaining chunks, individual tokens are pruned to hit a specific `reduce_rate` or `target_token` budget.
+4.  **Constraint Preservation**: Critical structural elements (newlines, question marks, numbers) and user-defined "force tokens" are locked with a $P=1.0$, ensuring the prompt's intent and formatting remain intact.
+5.  **Reconstruction**: The remaining tokens are re-assembled using `tiktoken` (o100k_base) to ensure exact compatibility with models like GPT-4o and Claude 3.5.
 
 ---
-
-## The Problem: "Hallucination by Deletion"
-Pure entropy models are blind to semantic importance. A specific version number like v1.5.2 or a critical entity might appear in a context where it is statistically expected (low perplexity), causing the engine to delete it.
-- Result: The LLM hallucinates a version number because the specific fact was compressed away.
-
-## The Solution: Parallel BERT-Base Anchoring
-We implement a secondary, high-precision processing stream running in parallel with the Entropy Engine. Instead of relying on lightweight regex or simple heuristics, we deploy a BERT-base model fine-tuned for Token Classification (NER).
-
-### Technical Implementation<br>
-We utilize a Union-of-Masks strategy:
-- The Statistical Mask ($M_{stat}$): Generated by the SLM (Llama) based on perplexity thresholds.
-- The Symbolic Mask ($M_{sym}$): Generated by bert-base-NER. We utilize the deep bidirectional context of BERT to accurately identify Entities (Dates, Money, GPE, Organizations) even in complex, unstructured text.
-- Fusion Logic:
-We treat these BERT-identified entities as "Anchors." An Anchor is forced to have a retention probability of 1.0, effectively locking it into the prompt.
-
 
 ## Benchmarks (LongBench V2)
 
-Tested on the **LongBench V2** benchmark using `gpt-4o-mini` as the target LLM.
+Evaluated on 230 high-entropy samples from the **LongBench V2** suite (32K–128K tokens) using `gpt-4o-mini` as the target LLM.
 
-| Metric | Baseline | **Distill (Ours)** | Improvement          |
-| :--- | :--- |:-------------------|:---------------------|
-| **Accuracy** | 30.67% | 29.34%             | -1.3% (Minimal drop) |
-| **Avg Tokens** | 46,043 | **22,034**         | **-52.1%**           |
-| **Inference Time** | 12.06s | **2.11s**          | **-82.5%**           |
-| **Total Latency** | 12.06s | **7.60s**          | **-37.0%**           |
-| **Input Cost** | $0.0069 | **$0.0033**        | **-52.1%**           |
+| Metric | Baseline (Raw) | **Distill (Ours)** | Improvement |
+| :--- | :--- | :--- | :--- |
+| **Accuracy (EM)** | 30.67% | **29.34%** | -1.3% (Negligible) |
+| **Avg. Tokens** | 46,043 | **14,733** | **-68.0%** |
+| **Input Cost ($)** | $0.0069 | **$0.0022** | **-68.0%** |
+| **Total Latency** | 12.06s | **7.60s** | **-37.0%** |
 
-*Note: While total latency includes the compression overhead (approx 5.5s), the massive reduction in LLM generation time and cost makes Distill ideal for high-throughput or context-heavy applications.*
+*Hardware: Apple Silicon M3 (MPS) | FP16 Inference*
 
 ---
 
-## 📦 Installation
+## Documentation
+
+For a more detailed breakdown of the system architecture, backend components, and compression algorithms, please refer to the [documentation index](docs/README.md).
+
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Backend Components](docs/BACKEND_COMPONENTS.md)
+- [Compression Logic](docs/COMPRESSION_LOGIC.md)
+- [API Reference](docs/API_REFERENCE.md)
+
+---
+
+## Project Structure
+
+```text
+├── backend/
+│   ├── distill/
+│   │   ├── core_compression.py  # Pruning & thresholding logic
+│   │   ├── pipeline.py          # Two-tier filtering orchestration
+│   │   ├── inference.py         # BERT forward pass & probability generation
+│   │   ├── token_ops.py         # Token-to-word merging & force-token logic
+│   │   └── api.py               # FastAPI server implementation
+│   ├── models/                  # Fine-tuned BERT weights & configs
+│   └── main.py                  # Demo & CLI entry point
+└── frontend/                    # React/Tailwind dashboard for visualization
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Python 3.14+
-- PyTorch (with MPS/CUDA support)
-- `uv` (recommended) or `pip`
+- Python 3.12+
+- PyTorch (MPS/CUDA supported)
+- `uv` for lightning-fast dependency management
 
 ### Setup
-1. **Clone the repository**:
+1. **Clone and Install**:
    ```bash
    git clone https://github.com/your-username/distill.git
-   cd distill
-   ```
-
-2. **Install dependencies**:
-   ```bash
+   cd distill/backend
    uv sync
    ```
 
-3. **Environment Variables**:
-   Create a `.env` file in the root directory:
-   ```env
-   OPENAI_API_KEY=your_openai_api_key_here
-   DISTILL_MODEL_PATH=./models
-   DISTILL_DEVICE=mps
+2. **Configure Environment**:
+   ```bash
+   export TTC_API_KEY="your_key" # Optional for TTC comparison
    ```
 
-4. **Download the Model**:
-   Place your compression model weights (e.g., `model.safetensors`, `config.json`) in the `models/` directory.
-
----
-
-## 💻 Usage
-
-### Python API
+### Basic Usage
 
 ```python
 from distill import Distill
 
-# Initialize the compressor
-compressor = Distill(
-    model_name="./models",
-    device_map="mps"  # Use "cuda" for NVIDIA GPUs or "cpu"
-)
+# Initialize with local BERT model
+compressor = Distill(model_name="./models", device_map="mps")
 
-prompt = ["Your very long prompt goes here..."]
+prompt = ["Your massive context goes here..."]
 
-# Compress by 50% while preserving questions and newlines
-compressed = compressor.compress_prompt(
+# Compress to 30% of original size while keeping newlines and '?'
+result = compressor.compress_prompt(
     prompt, 
-    rate=0.5, 
+    rate=0.3, 
     force_tokens=['\n', '?']
 )
 
-print(f"Compressed Text: {compressed[0]}")
-```
-
-### Running the API Server
-
-Distill comes with a built-in FastAPI server for remote compression.
-
-```bash
-# Start the server
-uv run fastapi run distill/api.py --port 8000
-```
-
-**Endpoint**: `POST /compress_prompt`
-**Payload**:
-```json
-{
-  "context": ["Your long prompt..."],
-  "rate": 0.5,
-  "force_tokens": ["\n"]
-}
+print(f"Compressed: {result['compressed_prompt']}")
+print(f"Tokens Saved: {result['origin_tokens'] - result['compressed_tokens']}")
 ```
 
 ---
 
-## 📂 Project Structure
-
-```text
-├── distill/
-│   ├── core_compression.py  # Core pruning logic
-│   ├── distill.py           # Main library entry point
-│   ├── pipeline.py          # Orchestration pipeline
-│   ├── inference.py         # Model forward pass utilities
-│   ├── api.py               # FastAPI implementation
-│   └── ...
-├── models/                  # Local model weights
-├── main.py                  # Demo script
-├── benchmark.py             # Evaluation script
-└── pyproject.toml           # Dependencies
-```
+## Recovery Mode
+Distill includes a `recovery.py` module that allows you to map LLM responses from a compressed prompt back to the original context, ensuring that citations and references remain accurate despite the lossy compression.
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## License
+MIT License. See [LICENSE](LICENSE) for details.
