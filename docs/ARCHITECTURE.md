@@ -26,23 +26,17 @@ Distill is built as a modular system designed for high-throughput prompt compres
 
 ## Data Flow Diagram
 
-```text
-[ User Input ] --> [ API / CLI ] 
-                       |
-                       v
-               [ Chunking Logic ] <--- [ Tiktoken ]
-                       |
-                       v
-               [ BERT Inference ] <--- [ Local Weights ]
-                       |
-                       v
-             [ Two-Tier Filtering ]
-             /                  
-    [ Context Filter ]    [ Token Filter ]
-             \                  /
-                       v
-               [ Prompt Assembly ]
-                       |
-                       v
-               [ Target LLM / Output ]
+```mermaid
+flowchart TD
+    User[User Input] --> API[API / CLI]
+    API --> Chunking[Chunking Logic]
+    Tiktoken[Tiktoken] --> Chunking
+    Chunking --> BERT[BERT Inference]
+    Weights[Local Weights] --> BERT
+    BERT --> Filtering[Two-Tier Filtering]
+    Filtering --> Context[Context Filter]
+    Filtering --> Token[Token Filter]
+    Context --> Assembly[Prompt Assembly]
+    Token --> Assembly
+    Assembly --> Output[Target LLM / Output]
 ```
