@@ -46,7 +46,7 @@ logger.trace(f"Allowed origins: {'http://localhost:8000'}")
 # CORS Middleware for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
